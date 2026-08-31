@@ -3,125 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile Cashier System</title>
+    <title>Hello Kitty Cashier 🎀</title>
     <style>
-        /* Mobile-friendly styling */
+        /* Soft, aesthetic Hello Kitty styling */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 10px;
-            background-color: #f4f4f9;
-            color: #333;
+            background-color: #ffe6ea; /* Soft pastel pink */
+            color: #5c4044; /* Dark brownish-pink for comfortable reading */
         }
         .header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 15px;
             text-align: center;
             margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(255, 154, 158, 0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
         .header h2 {
             margin: 0;
             font-size: 24px;
+            font-weight: bold;
+        }
+        .header h2 span {
+            color: #ffeef2;
         }
         .clock-container {
             margin-top: 10px;
             font-size: 16px;
-        }
-        button {
-            padding: 10px 5px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            background-color: #3498db;
-            color: white;
-            font-size: 13px; /* Smaller font to fit long names */
-            font-weight: bold;
-            cursor: pointer;
-            width: calc(50% - 14px); /* Fits two buttons per row */
-            line-height: 1.3;
-            vertical-align: top;
-        }
-        button:active {
-            background-color: #2980b9;
+            font-weight: 600;
         }
         .time-btn {
             width: auto;
-            padding: 5px 10px;
-            font-size: 14px;
-            background-color: #e67e22;
-        }
-        .section {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 5px 12px;
+            font-size: 13px;
+            background-color: #fff;
+            color: #ff9a9e;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .section {
+            background: #ffffff;
+            padding: 18px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #ffeef2;
+            box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+        }
+        h3 {
+            color: #ff7eb3;
+            border-bottom: 2px dashed #ffe6ea;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        /* Item Buttons */
+        button {
+            padding: 12px 6px;
+            margin: 5px;
+            border: 2px solid #ffd1dc;
+            border-radius: 12px;
+            background-color: #fff0f5;
+            color: #5c4044;
+            font-size: 13px; 
+            font-weight: 700;
+            cursor: pointer;
+            width: calc(50% - 14px); 
+            line-height: 1.4;
+            vertical-align: top;
+            transition: 0.1s;
+        }
+        button:active {
+            background-color: #ffb6c1;
+            transform: scale(0.98);
+        }
+        /* Cart List */
         .cart-list {
             list-style-type: none;
             padding: 0;
-            margin: 0 0 10px 0;
+            margin: 0 0 15px 0;
         }
         .cart-list li {
-            padding: 5px 0;
-            border-bottom: 1px solid #ddd;
+            padding: 10px 5px;
+            border-bottom: 1px dashed #ffd1dc;
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .remove-btn {
+            background-color: #ff6b81;
+            color: white;
+            padding: 0;
+            margin: 0;
+            width: 26px;
+            height: 26px;
+            font-size: 12px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .remove-btn:active {
+            background-color: #ff4757;
+        }
+        .cancel-order-btn {
+            width: 100%;
+            background-color: #ffeaa7;
+            color: #d35400;
+            border: 2px solid #fad390;
+            font-size: 15px;
+            padding: 12px;
+            margin-bottom: 15px;
+            margin-left: 0;
+            border-radius: 12px;
         }
         input[type="number"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             font-size: 16px;
             margin-top: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border: 2px solid #ffd1dc;
+            border-radius: 10px;
+            background-color: #fff9fa;
+            color: #5c4044;
+            outline: none;
         }
+        input[type="number"]:focus {
+            border-color: #ff9a9e;
+        }
+        /* Checkout Button */
         .checkout-btn {
             width: 100%;
-            background-color: #27ae60;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            color: #2b5c8f;
+            border: none;
             font-weight: bold;
             font-size: 18px;
             padding: 15px;
+            border-radius: 12px;
+            margin-left: 0;
+            box-shadow: 0 4px 10px rgba(161, 196, 253, 0.4);
         }
+        .checkout-btn:active {
+            background: #a1c4fd;
+        }
+        /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 13px;
         }
         th, td {
             text-align: left;
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+            padding: 10px 5px;
+            border-bottom: 1px solid #ffe6ea;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #fff0f5;
+            color: #ff7eb3;
+            border-radius: 5px;
         }
         .danger-btn {
-            background-color: #e74c3c;
+            background-color: #ff6b81;
+            color: white;
+            border: none;
             width: 100%;
             margin-top: 15px;
             padding: 15px;
+            border-radius: 12px;
+            margin-left: 0;
+            box-shadow: 0 4px 10px rgba(255, 107, 129, 0.3);
         }
     </style>
 </head>
 <body>
 
-    <!-- Header Section -->
     <div class="header">
-        <h2>Total Sales: RM <span id="total-sales">0.00</span></h2>
+        <h2>🎀 Total Sales: RM <span id="total-sales">0.00</span> 🎀</h2>
         <div class="clock-container">
-            <span id="clock">00:00:00</span>
+            🕒 <span id="clock">00:00:00</span>
             <button class="time-btn" onclick="toggleTimeFormat()">12/24 Hr</button>
         </div>
     </div>
 
-    <!-- Stock / Items Section -->
     <div class="section">
-        <h3>Select Items</h3>
+        <h3>🛍️ Select Items</h3>
         
-        <!-- Snacks -->
         <button onclick="addItem('LAYS', 7.00)">LAYS<br>(RM7.00)</button>
         <button onclick="addItem('TWISTIES', 5.00)">TWISTIES<br>(RM5.00)</button>
         <button onclick="addItem('CHEEZEL', 5.00)">CHEEZEL<br>(RM5.00)</button>
@@ -129,42 +205,42 @@
         <button onclick="addItem('SMALL RTE (CHOCOLATE)', 7.00)">SMALL RTE (CHOCO)<br>(RM7.00)</button>
         <button onclick="addItem('SMALL RTE (BBQ)', 7.00)">SMALL RTE (BBQ)<br>(RM7.00)</button>
         <button onclick="addItem('SMALL RTE (NASI LEMAK)', 7.00)">SMALL RTE (N.LEMAK)<br>(RM7.00)</button>
-        <button onclick="addItem('SALMON SKIN SALTED EGG', 16.00)">SALMON SKIN S.EGG<br>(RM16.00)</button>
+        <button onclick="addItem('SALMON SKIN S. EGG', 16.00)">SALMON SKIN S.EGG<br>(RM16.00)</button>
         <button onclick="addItem('SALMON SKIN SPICY', 16.00)">SALMON SKIN SPICY<br>(RM16.00)</button>
         <button onclick="addItem('NACHOS', 16.00)">NACHOS<br>(RM16.00)</button>
         <button onclick="addItem('8oz PAPER CUP', 5.30)">8oz PAPER CUP<br>(RM5.30)</button>
 
-        <!-- Beverages -->
         <button onclick="addItem('SPRITZER MINERAL', 4.00)">SPRITZER MINERAL<br>(RM4.00)</button>
         <button onclick="addItem('A&W', 5.00)">A&W<br>(RM5.00)</button>
-        <button onclick="addItem('MONSTER ENERGY ORIGINAL', 8.00)">MONSTER ORIGINAL<br>(RM8.00)</button>
-        <button onclick="addItem('MONSTER ENERGY ULTRA ZERO', 8.00)">MONSTER ULTRA ZERO<br>(RM8.00)</button>
+        <button onclick="addItem('MONSTER ORIGINAL', 8.00)">MONSTER ORIGINAL<br>(RM8.00)</button>
+        <button onclick="addItem('MONSTER ULTRA ZERO', 8.00)">MONSTER ULTRA ZERO<br>(RM8.00)</button>
         <button onclick="addItem('SPRITZER SO TINGE', 5.00)">SPRITZER SO TINGE<br>(RM5.00)</button>
         <button onclick="addItem('AYATAKA', 5.00)">AYATAKA<br>(RM5.00)</button>
         <button onclick="addItem('MINUTE MAID PLUS+', 7.00)">MINUTE MAID PLUS+<br>(RM7.00)</button>
         <button onclick="addItem('V-SOY', 2.20)">V-SOY<br>(RM2.20)</button>
         <button onclick="addItem('SUNQUICK RTD', 2.20)">SUNQUICK RTD<br>(RM2.20)</button>
         <button onclick="addItem('ZUS EXPRESSO CAN', 5.00)">ZUS EXPRESSO CAN<br>(RM5.00)</button>
-        <button onclick="addItem('ZUS SPECIALTY LATTE BOTTLE', 5.00)">ZUS LATTE BOTTLE<br>(RM5.00)</button>
+        <button onclick="addItem('ZUS LATTE BOTTLE', 5.00)">ZUS LATTE BOTTLE<br>(RM5.00)</button>
     </div>
 
-    <!-- Current Order Section -->
     <div class="section">
-        <h3>Current Order</h3>
-        <ul class="cart-list" id="cart-list"></ul>
-        <p style="font-size: 18px;"><strong>Total: RM <span id="cart-total">0.00</span></strong></p>
+        <h3>🛒 Current Order</h3>
         
-        <label for="cash-given">Customer Paid (RM):</label>
+        <button class="cancel-order-btn" onclick="clearCurrentOrder()">🧹 Clear Entire Order</button>
+        
+        <ul class="cart-list" id="cart-list"></ul>
+        <p style="font-size: 18px; color: #ff7eb3;"><strong>Total: RM <span id="cart-total">0.00</span></strong></p>
+        
+        <label for="cash-given" style="font-weight: 600;">Customer Paid (RM):</label>
         <input type="number" id="cash-given" placeholder="Enter amount received" step="0.10">
         
-        <button class="checkout-btn" onclick="processPayment()">Calculate Balance</button>
+        <button class="checkout-btn" onclick="processPayment()">✨ Calculate Balance ✨</button>
         
-        <h3 style="color: #c0392b;">Balance to return: RM <span id="balance-due">0.00</span></h3>
+        <h3 style="color: #ff6b81; margin-top: 15px;">Balance to return: RM <span id="balance-due">0.00</span></h3>
     </div>
 
-    <!-- History Section -->
     <div class="section">
-        <h3>Transaction History</h3>
+        <h3>📖 Transaction History</h3>
         <table>
             <thead>
                 <tr>
@@ -175,10 +251,9 @@
                 </tr>
             </thead>
             <tbody id="history-body">
-                <!-- Data will be inserted here automatically -->
-            </tbody>
+                </tbody>
         </table>
-        <button class="danger-btn" onclick="clearHistory()">Clear All Data</button>
+        <button class="danger-btn" onclick="clearHistory()">🗑️ Clear All Data</button>
     </div>
 
     <script>
@@ -241,13 +316,44 @@
             updateCartUI();
         }
 
+        function removeItem(index) {
+            cartTotal = cartTotal - cart[index].price;
+            cart.splice(index, 1); 
+            if (cartTotal < 0) cartTotal = 0; 
+            updateCartUI();
+        }
+
+        function clearCurrentOrder() {
+            if (cart.length > 0) {
+                if(confirm("Clear this customer's order? 🎀")) {
+                    cart = [];
+                    cartTotal = 0;
+                    document.getElementById("cash-given").value = "";
+                    document.getElementById("balance-due").innerText = "0.00";
+                    updateCartUI();
+                }
+            }
+        }
+
         function updateCartUI() {
             let list = document.getElementById("cart-list");
             list.innerHTML = ""; 
             
             for (let i = 0; i < cart.length; i++) {
                 let li = document.createElement("li");
-                li.innerText = cart[i].name + " - RM" + cart[i].price.toFixed(2);
+                
+                let itemText = document.createElement("span");
+                itemText.innerText = cart[i].name + " - RM" + cart[i].price.toFixed(2);
+                
+                let removeBtn = document.createElement("button");
+                removeBtn.innerText = "X";
+                removeBtn.className = "remove-btn";
+                removeBtn.onclick = function() {
+                    removeItem(i);
+                };
+                
+                li.appendChild(itemText);
+                li.appendChild(removeBtn);
                 list.appendChild(li);
             }
             document.getElementById("cart-total").innerText = cartTotal.toFixed(2);
@@ -255,7 +361,7 @@
 
         function processPayment() {
             if (cart.length === 0) {
-                alert("Please select items first!");
+                alert("Please select items first! 🐱");
                 return;
             }
 
@@ -263,7 +369,7 @@
             let cashGiven = parseFloat(cashInput);
 
             if (isNaN(cashGiven) || cashGiven < cartTotal) {
-                alert("Please enter enough money to cover the total.");
+                alert("Please enter enough money to cover the total. 💸");
                 return;
             }
 
@@ -327,7 +433,7 @@
         }
 
         function clearHistory() {
-            if (confirm("Warning: This will delete all sales and history. Are you sure?")) {
+            if (confirm("Warning: This will delete all sales and history. Are you sure? 🗑️")) {
                 localStorage.clear();
                 transactions = [];
                 totalSales = 0;
