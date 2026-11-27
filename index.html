@@ -1,2200 +1,802 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#101216">
-<meta name="description" content="Aurum Desk real-time XAUUSD M1, M5, and M15 scalping signal monitor with probability engine, stop loss, collect profit tracker, and historical paper practice.">
-<title>Aurum Desk · XAUUSD Real-Time Scalping Monitor (M1 / M5 / M15)</title>
-<style>
-:root{
-  color-scheme:dark;
-  --bg:#0e1014;--panel:#171a20;--surface:#1d2128;--border:#2d313a;
-  --muted:#a9afbc;--dim:#969daa;--text:#eef0f5;--gold:#eaca82;
-  --up:#67d6b2;--down:#f39098;--blue:#92a3d4;--warn:#f0b95b;
-  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
-  --sans:"Inter","Segoe UI",Arial,sans-serif;
-}
-*{box-sizing:border-box}
-html{font-family:var(--sans);font-size:16px;scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(ellipse at 12% 0%,#1b1c1e 0,transparent 36rem),var(--bg);color:var(--text);min-height:100vh}
-button,input,select,a{font:inherit}
-button,.btn,a,input,select{touch-action:manipulation}
-button,a{color:inherit}
-button{cursor:pointer;background:none;border:0}
-button:disabled{opacity:.5;cursor:not-allowed}
-a{text-decoration:none}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-a:hover{color:var(--gold)}
-h1,h2,h3,p{margin:0}
-h1{font-weight:640;font-size:clamp(2rem,3.4vw,3rem);line-height:1.08;letter-spacing:-.057em}
-h2{font-size:1.13rem;font-weight:610;letter-spacing:-.025em;line-height:1.3}
-h3{font-size:1rem;margin-top:20px}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.frame{width:min(100% - 72px,1392px);margin:0 auto}
-.gold{color:var(--gold)}.up{color:var(--up)}.down{color:var(--down)}.neutral,.muted{color:var(--muted)}
-[hidden]{display:none!important}
-.skip{position:fixed;transform:translateY(-140%);top:8px;left:16px;z-index:5;background:var(--panel);padding:10px}
-.skip:focus{transform:translateY(0)}
-.ic{width:18px;height:18px;display:inline-block;flex-shrink:0;vertical-align:middle;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;fill:none}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#101216"><meta name="description" content="Aurum Desk reads completed one-minute and five-minute XAUUSD market candles, with a separate historical practice account."><title>Aurum Desk · XAUUSD minute monitor</title><style>:root{color-scheme:dark;--bg:#0e1014;--panel:#171a20;--surface:#1d2128;--border:#2d313a;--muted:#a9afbc;--dim:#969daa;--text:#eef0f5;--gold:#eaca82;--up:#67d6b2;--down:#f39098;--blue:#92a3d4;--mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;--sans:"Inter","Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}html{font-family:var(--sans);font-size:16px;scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 12% 0%,#1b1c1e 0,transparent 36rem),var(--bg);color:var(--text);min-height:100vh}button,input,a{font:inherit}button,.btn,a,input{touch-action:manipulation}button,a{color:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button{background:none;border:0}a{text-decoration:none}button:focus-visible,a:focus-visible,input:focus-visible,canvas:focus-visible{outline:2px solid var(--gold);outline-offset:3px}a:hover{color:var(--gold)}h1,h2,h3,p{margin:0}h1{font-weight:640;font-size:clamp(2rem,3.4vw,3rem);line-height:1.08;letter-spacing:-.057em}h2{font-size:1.13rem;font-weight:610;letter-spacing:-.025em;line-height:1.3}h3{font-size:1rem;margin-top:20px}.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}.frame{width:min(100% - 72px,1392px);margin:0 auto}.gold{color:var(--gold)}.up{color:var(--up)}.down{color:var(--down)}.neutral,.muted{color:var(--muted)}[hidden]{display:none!important}.skip{position:fixed;transform:translateY(-140%);top:8px;left:16px;z-index:5;background:var(--panel);padding:10px}.skip:focus{transform:translateY(0)}.ic{width:18px;height:18px;display:inline-block;flex-shrink:0;vertical-align:middle;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;fill:none}
+header{background:#111317;border-bottom:1px solid var(--border)}.topbar{display:flex;align-items:center;min-height:70px;gap:clamp(22px,5vw,80px)}.brand{display:inline-flex;align-items:center;color:var(--text);font-weight:710;font-size:1.38rem;letter-spacing:-.065em;white-space:nowrap}.brand>span:last-child{font-weight:440;color:#b6bac4;margin-left:3px}.brandmark{width:29px;height:27px;margin-right:11px;display:flex;align-items:flex-end;gap:3px;transform:skewX(-16deg)}.brandmark i{display:block;width:6px;background:var(--gold);border-radius:1px}.brandmark i:nth-child(1){height:10px}.brandmark i:nth-child(2){height:18px}.brandmark i:nth-child(3){height:26px}.topbar nav{align-self:stretch;display:flex;align-items:stretch;gap:clamp(14px,2.4vw,36px)}nav a{position:relative;display:flex;align-items:center;color:var(--muted);white-space:nowrap;font-weight:530;font-size:.9rem}nav a[aria-current=page]{color:var(--gold)}nav a[aria-current=page]:after{content:"";height:2px;background:var(--gold);position:absolute;bottom:0;left:0;right:0}.btn,.iconbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #373c46;background:#20242b;border-radius:7px;min-height:38px;padding:8px 14px;font-weight:570;font-size:.875rem;color:var(--text);line-height:1.25}.btn:hover,.iconbtn:hover,.rangegroup button:hover,.textbtn:hover{background:#2b3039;color:white}.btn .ic,.textbtn .ic,.timer .ic,.cardlink .ic{width:16px;height:16px}.alertbtn{margin-left:auto;min-height:35px}.alertbtn>span{width:6px;height:6px;border-radius:50%;background:var(--gold)}.titlebar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:34px 0 23px}.eyebrow,.smallcap,.tag{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.105em;font-weight:600}.eyebrow{display:flex;align-items:center;gap:9px;color:var(--gold);margin-bottom:10px}.eyebrow .ic{width:14px;height:14px}.statusdot,.sourceDot{width:7px;height:7px;background:var(--gold);display:inline-block;border-radius:50%}.statusdot{box-shadow:0 0 0 4px #eaca8214}.playback,.timer,.btn,.textbtn,.cardlink{display:inline-flex;align-items:center}.playback{gap:18px}.timer{gap:7px;color:var(--muted);font-size:.86rem}.timer b{color:var(--text);font-weight:520}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.metric,.panel,.summarybox,.guidecard{border:1px solid var(--border);border-radius:12px;background:var(--panel)}.metric{padding:17px 20px;position:relative;overflow:hidden;min-width:0}.featured{background:linear-gradient(105deg,#25231f,#1b1d21);border-color:#494033}.metricLabel{font-size:.875rem;color:#bec3cd;display:flex;align-items:center;gap:7px;min-height:18px}.metricLabel .gold{font-family:var(--mono);font-weight:600}.metricLabel .divider{color:#78736a}.metricLabel .ic{margin-left:auto;color:#9097a5;width:17px;height:17px}.metvalue{font-size:clamp(1.4rem,2.08vw,2rem);line-height:1.2;letter-spacing:-.055em;font-weight:550;margin:10px 0 5px;position:relative;z-index:1}.posvalue{letter-spacing:-.04em}.meta,.subline{font-size:.8rem;color:var(--muted);line-height:1.5}.metric .meta{position:relative;z-index:1}.ingots{position:absolute;right:18px;bottom:25px;width:51px;height:35px;opacity:.87;transform:rotate(-9deg)}.ingots i{position:absolute;width:28px;height:17px;clip-path:polygon(19% 0,80% 0,100% 78%,89% 100%,0 100%,0 85%);background:linear-gradient(160deg,#f4d793 0 29%,#bf974f 30% 66%,#826838 67%)}.ingots i:nth-child(1){bottom:0;left:0}.ingots i:nth-child(2){bottom:0;left:25px}.ingots i:nth-child(3){bottom:14px;left:13px}#spark{position:absolute;right:10px;bottom:14px;width:32%;height:34px}
+.gridmain,.lowergrid{display:grid;grid-template-columns:minmax(0,1.96fr) minmax(310px,1fr);gap:18px}.lowergrid{margin-top:18px}.panel{min-width:0;overflow:hidden}.panelhead,.sectionhead,.signalhead,.dlghead,.chartfoot,.voteline,.setting,.journalrow,.historyrow,.dialogActions{display:flex;align-items:center;justify-content:space-between;gap:12px}.panelhead{padding:20px 21px 13px}.instrument{display:flex;align-items:center;gap:12px}.tickerIcon{width:40px;height:40px;background:#30291d;border:1px solid #51432b;color:var(--gold);display:grid;place-items:center;border-radius:11px}.tickerIcon .ic{width:25px;height:25px}.subline{display:flex;align-items:center;gap:8px}.subline b,footer b{font-weight:400;color:var(--dim)}.rangegroup{display:flex;padding:3px;border:1px solid var(--border);border-radius:7px;background:#12151a;gap:1px}.rangegroup button{color:var(--muted);border-radius:4px;font:.78rem var(--mono);padding:6px 9px}.rangegroup button[aria-pressed=true]{color:var(--gold);background:#343027}.chartmeta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 12px;min-height:38px;padding:0 20px 8px}.ohlc{font-size:.75rem;color:#d3d6dd;display:flex;gap:8px;flex-wrap:wrap}.ohlc b{font-weight:400;color:var(--dim);margin-right:2px}.overlays{display:flex;gap:10px;align-items:center}.overlays button{color:var(--muted);font-size:.75rem;padding:4px 0;display:flex;align-items:center;gap:4px}.overlays button[aria-pressed=false]{opacity:.45;text-decoration:line-through}.line{display:inline-block;width:11px;height:2px}.fast{background:var(--gold)}.slow{background:var(--blue)}.plot{height:270px;position:relative;margin:0 9px 0 12px}#chart{width:100%;height:100%;display:block;cursor:crosshair;touch-action:pan-y}.chartfoot{padding:10px 19px;border-top:1px solid var(--border);color:var(--muted);font-size:.8rem;min-height:44px}.chartfoot>span{display:flex;align-items:center;gap:7px}.sourceDot{width:6px;height:6px;background:#a3a9b7}.textbtn{color:var(--muted);font-size:.82rem;gap:6px}.smallbtn{border-radius:4px;padding:4px}.signalpanel{padding:19px 22px;display:flex;flex-direction:column}.signalhead h2,.sectionhead h2{display:flex;align-items:center;gap:10px}.tag{display:inline-block;border:1px solid #3b4049;border-radius:5px;color:#b9bfca;padding:4px 6px;font-size:.67rem;white-space:nowrap}.signalTop{display:flex;align-items:center;gap:13px;margin:21px 0 8px}.sigicon{background:color-mix(in srgb,currentColor 9%,transparent);display:grid;place-items:center;width:52px;height:52px;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:11px}.sigicon .ic{width:29px;height:29px;stroke-width:1.8}.smallcap{font-size:.66rem;color:var(--muted);margin-bottom:3px}.signalword{font-size:1.85rem;font-weight:620;letter-spacing:-.045em;line-height:1.1}.explain{font-size:.9rem;line-height:1.5;color:#bdc2cc;min-height:2.7em}.voteline{margin-top:15px;font-size:.8rem;color:var(--muted)}.voteline b{color:var(--text);font-weight:520}.voteBars{display:flex;gap:4px;margin:7px 0 9px}.voteBars i{height:4px;flex:1;border-radius:2px;background:#363b44}.voterow{padding:7px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem}.voterow .voteval{font-family:var(--mono);font-size:.75rem}.voterow .voteval:before,.pill:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:middle}.cardlink{margin-top:auto;padding-top:10px;color:#c3c8d1;font-size:.82rem;gap:7px;border-top:1px solid var(--border)}.voterows{padding-bottom:10px}
+.sectionhead{padding:18px 20px;border-bottom:1px solid var(--border)}#ticketBody,#signals{padding:14px 20px}.ticketinfo,.ticketcontrols{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ticketinfo{justify-content:space-between;font-size:.87rem;color:var(--muted);margin-bottom:14px}.ticketinfo strong{color:var(--text);font-weight:500}.ticketcontrols label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.84rem}.ticketcontrols select{appearance:none;background:#13161a;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 10px;font:inherit;background-image:linear-gradient(45deg,transparent 50%,#aab0bb 50%),linear-gradient(135deg,#aab0bb 50%,transparent 50%);background-position:calc(100% - 14px) 50%,calc(100% - 10px) 50%;background-size:4px 4px;background-repeat:no-repeat}.buy,.sell{flex:1;min-width:94px}.btn.buy{background:#253b34;border-color:#38584c;color:#92e7c8}.btn.sell{background:#3b292e;border-color:#5f3e47;color:#ffadb5}.buy:hover,.sell:hover{filter:brightness(1.2)}.historyrow{padding:9px 0;font-size:.84rem}.historyrow+.historyrow{border-top:1px solid #2d313966}.historyrow time{color:var(--muted);font:.74rem var(--mono)}.historyrow .lastprice{font:.79rem var(--mono);margin-left:auto;color:#c6cbd5}.historyrow .pill{min-width:42px}.pill{font-size:.77rem;white-space:nowrap}.pill:before{width:5px;height:5px}footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin:30px 0 0;padding:18px 0 25px;color:#9299a7;font-size:.78rem}footer b{margin:0 4px}.footerBrand{font-weight:600;letter-spacing:-.035em}.summary3,.guidegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}.summarybox,.guidecard,.method{padding:22px}.summarybox b{display:block;font:550 1.6rem var(--mono);margin-top:10px}.guidegrid{grid-template-columns:repeat(2,minmax(0,1fr));margin:18px 0}.guidecard h2{margin:7px 0}.guidecard p,.method p,.marketnote,dialog p{color:#b8bfca;font-size:.94rem;line-height:1.65}.guidecard a{color:var(--gold);font-size:.85rem;text-decoration:underline;text-underline-offset:3px}.guidecard p{margin:10px 0}.guidecard .guidevalue{display:flex;gap:10px;justify-content:space-between;align-items:center}.guidevalue .mono{color:var(--gold);font-size:.8rem}.method p{margin-top:10px;max-width:100ch}.marketnote{padding:12px 20px}.marketframe{height:clamp(430px,65vh,780px);width:100%}.tradingview-widget-container{height:100%;width:100%}.tradingview-widget-container__widget{height:calc(100% - 32px);width:100%}.tradingview-widget-copyright{font-size:.8rem;padding:0 12px;color:var(--muted)}.tradingview-widget-copyright a{color:var(--gold)}.empty{padding:30px 20px;line-height:1.6;color:var(--muted)}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:.86rem}td,th{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border)}th{color:var(--muted);font-weight:500;letter-spacing:.02em}.feedback{min-height:1.5em;color:var(--gold);margin-top:12px}.setting{padding:16px 0;border-top:1px solid var(--border)}.setting small{display:block;color:var(--muted);line-height:1.5;margin-top:4px}.setting b{font-weight:550}.setting input{width:36px;height:20px;accent-color:var(--gold);cursor:pointer}.iconbtn{padding:8px;min-height:34px}.dialogActions{justify-content:flex-start;flex-wrap:wrap;margin:15px 0 0}.filelabel{cursor:pointer}.filelabel:has(+input:focus-visible){outline:2px solid var(--gold)}#csvFile{position:absolute;clip-path:inset(50%);width:1px;height:1px}.csvexample{background:#111419;border:1px solid var(--border);border-radius:5px;padding:9px;font-size:.86rem}dialog{background:#1a1e25;color:var(--text);border:1px solid #3b404a;border-radius:14px;max-width:min(500px,calc(100vw - 26px));width:100%;padding:24px;box-shadow:0 15px 70px #0006}dialog::backdrop{background:#07090dba}dialog h2{font-size:1.5rem}dialog p{margin:12px 0}.dlghead{align-items:flex-start}.dlghead .eyebrow{margin:0 0 5px}.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,15px);padding:13px 19px;border:1px solid #6d6042;background:#302b22;color:#f3e5c5;border-radius:9px;font-size:.9rem;box-shadow:0 8px 35px #0005;opacity:0;visibility:hidden;transition:opacity .15s,transform .15s;z-index:9;width:max-content;max-width:calc(100vw - 28px)}.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}#storageNote{padding:10px;background:#382c1b;text-align:center;color:var(--gold)}
+@media(min-width:1450px){.plot{height:320px}.signalTop{margin-top:29px}.voterow{padding:10px 0}}
+@media(max-width:1100px){.frame{width:calc(100% - 40px)}.metric{padding:15px}.ingots{opacity:.55;right:10px;transform:scale(.75) rotate(-9deg);transform-origin:bottom right}.signalpanel{padding:17px}.chartmeta{align-items:flex-start}.topbar{gap:26px}.stats,.gridmain,.lowergrid{gap:12px}.panelhead{padding:17px 15px 10px}.ohlc{gap:5px}}
+@media(max-width:850px){.gridmain,.lowergrid{grid-template-columns:minmax(0,1.6fr) minmax(245px,1fr)}.chartmeta{display:block}.overlays{margin-top:4px}.plot{height:280px}.metvalue{font-size:1.42rem}.metric{padding:12px}.ingots{display:none}.metricLabel{font-size:.8rem}.topbar nav{gap:16px}.topbar{gap:19px}nav a{font-size:.82rem}.rangegroup button{padding:5px}.tickerIcon{display:none}.voterow{font-size:.81rem}.playback{gap:10px}}
+@media(max-width:700px){.frame{width:calc(100% - 28px)}.topbar{flex-wrap:wrap;gap:0;min-height:0;padding-top:12px}.topbar nav{width:100%;order:3;gap:max(15px,3vw);overflow-x:auto;margin-top:6px;scrollbar-width:none}.topbar nav a{padding:13px 0}.brand{font-size:1.25rem}.brandmark{transform:scale(.86) skewX(-16deg);margin-right:6px}.alertbtn{min-height:32px;padding:6px 9px}.titlebar{padding:24px 0 16px;align-items:flex-start;flex-wrap:wrap}.playback{justify-content:space-between;width:100%}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:12px}.metric{padding:13px}.metvalue{font-size:1.5rem}.metricLabel{font-size:.8rem}.gridmain,.lowergrid{grid-template-columns:minmax(0,1fr);gap:12px}.lowergrid{margin-top:12px}.signalpanel{padding:17px 19px}.plot{height:255px}.tickerIcon{display:grid}.chartmeta{display:flex;align-items:center;padding:1px 14px 6px}.overlays{margin-top:0}.ohlc{font-size:.68rem}.ingots{display:block;opacity:.4;bottom:14px}.summary3{gap:8px}.summarybox{padding:11px}.summarybox b{font-size:1rem}.guidegrid{grid-template-columns:1fr}.explain{min-height:0}.cardlink{padding-top:12px}.signalTop{margin-top:16px}.guidegrid,.summary3{margin-bottom:12px}.sectionhead{padding:15px 16px}.ticketcontrols{gap:6px}.ticketcontrols label{width:100%}footer{font-size:.7rem;margin-top:22px}.chartfoot{padding:8px 13px}.timer{font-size:.8rem}}
+@media(max-width:370px){.frame{width:calc(100% - 20px)}.topbar nav{gap:11px}.topbar nav a{font-size:.76rem}.ingots,#spark{display:none}.tickerIcon{display:none}.summary3{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
 
-header{background:#111317;border-bottom:1px solid var(--border)}
-.topbar{display:flex;align-items:center;min-height:70px;gap:clamp(18px,3.5vw,55px)}
-.brand{display:inline-flex;align-items:center;color:var(--text);font-weight:710;font-size:1.38rem;letter-spacing:-.065em;white-space:nowrap}
-.brand>span:last-child{font-weight:440;color:#b6bac4;margin-left:3px}
-.brandmark{width:29px;height:27px;margin-right:11px;display:flex;align-items:flex-end;gap:3px;transform:skewX(-16deg)}
-.brandmark i{display:block;width:6px;background:var(--gold);border-radius:1px}
-.brandmark i:nth-child(1){height:10px}.brandmark i:nth-child(2){height:18px}.brandmark i:nth-child(3){height:26px}
-.topbar nav{align-self:stretch;display:flex;align-items:stretch;gap:clamp(12px,1.8vw,28px)}
-nav a{position:relative;display:flex;align-items:center;color:var(--muted);white-space:nowrap;font-weight:530;font-size:.9rem}
-nav a[aria-current=page]{color:var(--gold)}
-nav a[aria-current=page]:after{content:"";height:2px;background:var(--gold);position:absolute;bottom:0;left:0;right:0}
+.replaycheck{display:grid;grid-template-columns:1fr auto;gap:3px 8px;background:#1b1e24;border:1px solid var(--border);border-radius:6px;padding:9px 10px;margin:0 0 10px;font-size:.76rem;color:#c5cad4}.replaycheck strong{font:500 .77rem var(--mono);color:var(--text)}.replaycheck small{grid-column:1/-1;color:var(--muted);font-size:.74rem;line-height:1.4}.metricLabel>i{margin-left:auto;display:flex}
+.feedline{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted);margin:-4px 0 17px}.feedbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font:600 .71rem var(--mono);color:var(--gold);border:1px solid #504636;background:#28241d;padding:4px 8px;border-radius:4px}.feedbadge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}.feedbadge.ok{color:var(--up);background:#192c25;border-color:#315346}.readpanel{padding:20px;display:flex;flex-direction:column}.readhero{padding:18px 0 12px}.readhero .signalword{margin:3px 0 8px}.details{margin-bottom:12px}.details div{display:flex;justify-content:space-between;gap:6px;font-size:.87rem;padding:6px 0}.details div span{color:var(--muted)}.details b{font:500 .84rem var(--mono)}.readpanel .cardlink{padding-top:12px}.plotempty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:var(--muted);font-size:.9rem;pointer-events:none}.barcounts{display:inline-flex;align-items:center;gap:3px}.barcounts button{color:var(--muted);font:.75rem var(--mono);padding:4px 5px;border:1px solid transparent;border-radius:4px}.barcounts button[aria-pressed=true]{color:var(--gold);border-color:#454030}.log,#paperTicket{padding:10px 19px}.log .historyrow{font: .81rem var(--mono)}.log .historyrow span:last-child{margin-left:auto}.topbar{gap:clamp(18px,3.5vw,55px)}.topbar nav{gap:clamp(12px,1.8vw,28px)}#practice .summary3{margin-top:16px}.setting select{background:#232832;border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)}#saveWarn{padding:10px;color:var(--gold);text-align:center}.tag,.metricLabel,.mono{font-variant-numeric:tabular-nums}.chartfoot{flex-wrap:wrap}.marketframe .tradingview-widget-container{height:100%;width:100%}.gapnote{font-size:.8rem;color:var(--gold)}.plot{height:282px}.tablewrap td,.tablewrap th{font-size:.83rem}.sectionhead{flex-wrap:wrap}.tablewrap td{font-variant-numeric:tabular-nums}.meterDot{color:var(--muted)}.btn:disabled{cursor:not-allowed}.feedback:empty{display:none}.method p.meta{font-size:.82rem}.panel .kv{display:grid;gap:5px}.kv b{font-size:1.05rem}.stats .featured .metvalue{padding-right:24px}
+@media(max-width:980px) and (min-width:701px){.topbar{gap:16px}.topbar nav{gap:11px}nav a{font-size:.78rem}}
+@media(max-width:700px){.topbar nav{gap:16px}.feedline{align-items:flex-start;line-height:1.5}.readpanel{padding:16px}.readhero{padding:12px 0 6px}.plot{height:245px}.barcounts{margin-left:auto}.tablewrap th,.tablewrap td{padding:10px 8px;font-size:.77rem}.topbar nav a{font-size:.85rem}.chartfoot{font-size:.75rem}}
+.connections{color:var(--muted);font-size:.8rem;margin:-8px 0 15px}.connections summary{cursor:pointer;width:max-content}.connections div{display:grid;grid-template-columns:auto 1fr;gap:4px 15px;padding:10px 0}.connections b{font-weight:500}.spotstats{grid-template-columns:1.25fr repeat(4,minmax(0,1fr))}.spotstats .featured{padding-right:12px}.spotstats .ingots{display:none}.spotstats .metric{padding:15px}.spotstats .metricLabel small{font-size:.68rem;margin-left:auto}.spotstats .meta{font-size:.75rem}.spotstats .featured .metvalue{padding-right:0}#paperInterval{background:#232832;color:var(--text);padding:7px;border:1px solid var(--border);border-radius:6px}
+@media(max-width:900px){.spotstats{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:700px){.spotstats{grid-template-columns:repeat(2,minmax(0,1fr))}.spotstats .featured{grid-column:1/-1}.spotstats .featured .ingots{display:block}.spotstats .featured .metricLabel{justify-content:flex-start}.spotstats .featured .metricLabel small{margin-left:5px}}
 
-.btn,.iconbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #373c46;background:#20242b;border-radius:7px;min-height:38px;padding:8px 14px;font-weight:570;font-size:.875rem;color:var(--text);line-height:1.25;transition:background .15s,border-color .15s}
-.btn:hover,.iconbtn:hover,.rangegroup button:hover,.textbtn:hover{background:#2b3039;color:#fff}
-.btn.primary{background:#2d281c;border-color:#685735;color:var(--gold)}
-.btn.primary:hover{background:#3b3423}
-.btn.buy{background:#1c352d;border-color:#356555;color:#8ef0ce}
-.btn.sell{background:#3b2228;border-color:#6b3b47;color:#ffadb5}
-.btn.buy:hover,.btn.sell:hover{filter:brightness(1.18)}
-.btn.sm{min-height:31px;padding:5px 10px;font-size:.78rem}
-.btn .ic,.textbtn .ic,.timer .ic,.cardlink .ic{width:16px;height:16px}
-.alertbtn{margin-left:auto;min-height:35px}
+.entryreview{margin:8px 0 14px}
 
-.titlebar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:30px 0 20px}
-.eyebrow,.smallcap,.tag{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.105em;font-weight:600;font-variant-numeric:tabular-nums}
-.eyebrow{display:flex;align-items:center;gap:9px;color:var(--gold);margin-bottom:8px}
-.statusdot{width:7px;height:7px;background:var(--gold);display:inline-block;border-radius:50%;box-shadow:0 0 0 4px #eaca8218}
-.statusdot.live{background:var(--up);box-shadow:0 0 0 4px #67d6b222}
-.playback,.timer,.textbtn,.cardlink{display:inline-flex;align-items:center}
-.playback{gap:16px}
-.timer{gap:7px;color:var(--muted);font-size:.86rem}
-.timer b{color:var(--text);font-weight:520}
-
-.feedline{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted);margin:-4px 0 14px;flex-wrap:wrap}
-.feedbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font:600 .71rem var(--mono);color:var(--gold);border:1px solid #504636;background:#28241d;padding:4px 8px;border-radius:4px}
-.feedbadge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.feedbadge.ok{color:var(--up);background:#192c25;border-color:#315346}
-.feedbadge.err{color:var(--down);background:#301b20;border-color:#5c323b}
-.connections{color:var(--muted);font-size:.8rem;margin:-6px 0 15px}
-.connections summary{cursor:pointer;width:max-content}
-.connections div{display:grid;grid-template-columns:auto 1fr;gap:4px 15px;padding:10px 0}
-.connections b{font-weight:500;color:var(--text)}
-
-.stats{display:grid;gap:14px;margin-bottom:18px}
-.spotstats{grid-template-columns:1.25fr repeat(4,minmax(0,1fr))}
-.metric,.panel,.summarybox,.guidecard{border:1px solid var(--border);border-radius:12px;background:var(--panel)}
-.metric{padding:15px 17px;position:relative;overflow:hidden;min-width:0}
-.featured{background:linear-gradient(105deg,#25231f,#1b1d21);border-color:#494033}
-.metricLabel{font-size:.84rem;color:#bec3cd;display:flex;align-items:center;gap:6px;min-height:18px;font-variant-numeric:tabular-nums}
-.metricLabel .gold{font-family:var(--mono);font-weight:600}
-.metricLabel .divider{color:#78736a}
-.metricLabel small{font-size:.68rem;margin-left:auto;color:var(--muted)}
-.metvalue{font-size:clamp(1.32rem,1.95vw,1.88rem);line-height:1.2;letter-spacing:-.05em;font-weight:550;margin:8px 0 4px;position:relative;z-index:1}
-.meta,.subline{font-size:.78rem;color:var(--muted);line-height:1.45}
-.ingots{position:absolute;right:14px;bottom:18px;width:44px;height:30px;opacity:.65;transform:rotate(-9deg)}
-.ingots i{position:absolute;width:24px;height:15px;clip-path:polygon(19% 0,80% 0,100% 78%,89% 100%,0 100%,0 85%);background:linear-gradient(160deg,#f4d793 0 29%,#bf974f 30% 66%,#826838 67%)}
-.ingots i:nth-child(1){bottom:0;left:0}.ingots i:nth-child(2){bottom:0;left:20px}.ingots i:nth-child(3){bottom:12px;left:10px}
-
-.gridmain,.lowergrid{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(350px,1.08fr);gap:18px}
-.lowergrid{margin-top:18px;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr)}
-.panel{min-width:0;overflow:hidden}
-.panelhead,.sectionhead,.signalhead,.dlghead,.chartfoot,.voteline,.setting,.historyrow,.dialogActions{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.panelhead{padding:18px 20px 12px;flex-wrap:wrap}
-.instrument{display:flex;align-items:center;gap:12px}
-.tickerIcon{width:40px;height:40px;background:#30291d;border:1px solid #51432b;color:var(--gold);display:grid;place-items:center;border-radius:11px}
-.tickerIcon .ic{width:24px;height:24px}
-.subline{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.subline b,footer b{font-weight:400;color:var(--dim)}
-
-.rangegroup{display:flex;padding:3px;border:1px solid var(--border);border-radius:7px;background:#12151a;gap:2px}
-.rangegroup button{color:var(--muted);border-radius:4px;font:.78rem var(--mono);padding:6px 10px}
-.rangegroup button[aria-pressed=true]{color:var(--gold);background:#343027}
-
-.chartmeta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;min-height:36px;padding:0 20px 8px}
-.ohlc{font-size:.75rem;color:#d3d6dd;display:flex;gap:8px;flex-wrap:wrap}
-.ohlc b{font-weight:400;color:var(--dim);margin-right:2px}
-.overlays{display:flex;gap:11px;align-items:center;flex-wrap:wrap}
-.overlays button{color:var(--muted);font-size:.75rem;padding:4px 0;display:flex;align-items:center;gap:4px}
-.overlays button[aria-pressed=false]{opacity:.45;text-decoration:line-through}
-.line{display:inline-block;width:11px;height:2px}
-.fast{background:var(--gold)}.slow{background:var(--blue)}.lvline{background:var(--up)}
-.plot{height:330px;position:relative;margin:0 9px 0 12px}
-#chart{width:100%;height:100%;display:block;cursor:crosshair;touch-action:pan-y}
-.plotempty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:var(--muted);font-size:.9rem;pointer-events:none;padding:16px}
-.chartfoot{padding:10px 19px;border-top:1px solid var(--border);color:var(--muted);font-size:.8rem;min-height:44px;flex-wrap:wrap}
-.barcounts{display:inline-flex;align-items:center;gap:3px}
-.barcounts button{color:var(--muted);font:.75rem var(--mono);padding:4px 6px;border:1px solid transparent;border-radius:4px}
-.barcounts button[aria-pressed=true]{color:var(--gold);border-color:#454030}
-.textbtn{color:var(--muted);font-size:.8rem;gap:6px}
-
-/* Real-Time Signal Panel */
-.readpanel{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.signalhead h2,.sectionhead h2{display:flex;align-items:center;gap:9px}
-.tag{display:inline-block;border:1px solid #3b4049;border-radius:5px;color:#b9bfca;padding:4px 7px;font-size:.67rem;white-space:nowrap}
-.tag.buy{color:var(--up);border-color:#2f5e4e;background:#162922}
-.tag.sell{color:var(--down);border-color:#613640;background:#2e191e}
-.tag.wait{color:var(--gold);border-color:#54472c;background:#292318}
-
-.signalHeroBox{display:flex;align-items:center;gap:14px;padding:14px;border-radius:10px;border:1px solid var(--border);background:#13161b}
-.signalHeroBox.buy{border-color:#2f6351;background:linear-gradient(120deg,#152822,#14181e)}
-.signalHeroBox.sell{border-color:#683743;background:linear-gradient(120deg,#2b171d,#14181e)}
-.signalHeroBox.wait{border-color:#4d432f;background:linear-gradient(120deg,#231f17,#14181e)}
-.sigicon{display:grid;place-content:center;width:48px;height:48px;border-radius:10px;flex-shrink:0;border:1px solid currentColor;background:color-mix(in srgb,currentColor 11%,transparent)}
-.sigicon .ic{width:26px;height:26px;stroke-width:1.9}
-.signalword{font-size:1.72rem;font-weight:650;letter-spacing:-.045em;line-height:1.1}
-.explain{font-size:.84rem;line-height:1.48;color:#c3c8d2}
-
-/* Probability meter */
-.probBox{background:#13161b;border:1px solid var(--border);border-radius:9px;padding:11px 12px}
-.probHead{display:flex;justify-content:space-between;align-items:center;font-size:.77rem;margin-bottom:6px}
-.probBar{height:8px;border-radius:99px;background:#2b303a;overflow:hidden;display:flex}
-.probBuyFill{background:linear-gradient(90deg,#3ea986,#67d6b2);transition:width .25s ease}
-.probSellFill{background:linear-gradient(90deg,#f39098,#c95663);transition:width .25s ease}
-.nextLean{margin-top:8px;font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.nextLean strong{color:var(--text);font-weight:560}
-
-/* Entry / Stop Loss / Collect Profit Levels */
-.levelsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.lvlCard{background:#14181e;border:1px solid var(--border);border-radius:8px;padding:9px 11px}
-.lvlCard .smallcap{font-size:.63rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
-.lvlCard b{display:block;font:600 1.02rem var(--mono);margin-top:3px}
-.lvlCard small{display:block;font-size:.72rem;color:var(--muted);margin-top:2px;font-family:var(--mono)}
-.lvlCard.sl{border-color:#5a333d}
-.lvlCard.tp{border-color:#2c594a}
-.lvlCard.entry{border-color:#4f4531}
-
-/* MTF Confluence row */
-.mtfRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.mtfChip{background:#14181e;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.74rem}
-.mtfChip .mhead{display:flex;justify-content:space-between;font-family:var(--mono);color:var(--muted);margin-bottom:3px}
-.mtfChip strong{font-size:.82rem;font-weight:600}
-.mtfChip small{display:block;color:var(--muted);font-size:.7rem;margin-top:2px;font-family:var(--mono)}
-
-/* Active Trade / Stop & Collect Profit Controls */
-.trackerBox{background:#12161c;border:1px solid #353b47;border-radius:9px;padding:11px 12px}
-.trackerHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:.8rem}
-.trackerBtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
-.trackerBtns .btn{flex:1;min-width:110px}
-.progressWrap{margin:8px 0 4px}
-.progressTrack{height:7px;background:#262b34;border-radius:99px;position:relative;overflow:hidden}
-.progressFill{position:absolute;top:0;bottom:0;left:0;background:var(--gold);transition:width .2s}
-.progressLabels{display:flex;justify-content:space-between;font:.7rem var(--mono);color:var(--muted);margin-top:4px}
-
-.riskToolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.76rem;color:var(--muted);padding-top:4px}
-.riskToolbar select{background:#14181e;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 8px;font-size:.76rem}
-.riskToolbar label{display:inline-flex;align-items:center;gap:6px}
-
-.analysisLinks{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
-.cardlink{color:#c3c8d1;font-size:.8rem;gap:6px}
-
-.sectionhead{padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.log,#paperTicket{padding:10px 19px}
-.historyrow{padding:8px 0;font-size:.82rem;flex-wrap:wrap}
-.historyrow+.historyrow{border-top:1px solid #2d313966}
-.historyrow time{color:var(--muted);font:.73rem var(--mono)}
-.pill{font-size:.73rem;font-family:var(--mono);padding:2px 7px;border-radius:4px;border:1px solid var(--border);white-space:nowrap}
-.pill.buy{color:var(--up);border-color:#2f5e4e;background:#162922}
-.pill.sell{color:var(--down);border-color:#613640;background:#2e191e}
-.pill.wait{color:var(--gold);border-color:#54472c;background:#292318}
-
-.tablewrap{overflow:auto}
-table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:.83rem}
-td,th{text-align:left;padding:11px 14px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
-th{color:var(--muted);font-weight:500;letter-spacing:.02em}
-
-.summary3,.guidegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}
-#practice .summary3{margin-top:16px}
-.summarybox,.guidecard,.method{padding:20px}
-.summarybox b{display:block;font:550 1.5rem var(--mono);margin-top:8px}
-.guidegrid{grid-template-columns:repeat(2,minmax(0,1fr));margin:18px 0}
-.guidecard h2{margin:6px 0}
-.guidecard p,.method p,.marketnote,dialog p{color:#b8bfca;font-size:.92rem;line-height:1.6}
-.guidecard .guidevalue{display:flex;gap:10px;justify-content:space-between;align-items:center}
-.guidevalue .mono{color:var(--gold);font-size:.8rem}
-.method p{margin-top:10px;max-width:100ch}
-.marketnote{padding:12px 20px}
-.marketframe{height:clamp(430px,65vh,780px);width:100%}
 .marketframe.emergency{height:340px}
-.empty{padding:26px 20px;line-height:1.6;color:var(--muted)}
-.feedback{min-height:1.4em;color:var(--gold);margin-top:10px;font-size:.88rem}
-.feedback:empty{display:none}
-.setting{padding:14px 0;border-top:1px solid var(--border)}
-.setting small{display:block;color:var(--muted);line-height:1.45;margin-top:4px}
-.setting select,#paperInterval{background:#232832;border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text)}
-.dialogActions{justify-content:flex-start;flex-wrap:wrap;margin:14px 0 0}
-#csvFile{position:absolute;clip-path:inset(50%);width:1px;height:1px}
-dialog{background:#1a1e25;color:var(--text);border:1px solid #3b404a;border-radius:14px;max-width:min(500px,calc(100vw - 26px));width:100%;padding:24px;box-shadow:0 15px 70px #0006}
-dialog::backdrop{background:#07090dba}
-dialog h2{font-size:1.4rem}
-dialog p{margin:10px 0}
-.iconbtn{padding:8px;min-height:34px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,15px);padding:13px 19px;border:1px solid #6d6042;background:#2b261d;color:#f3e5c5;border-radius:9px;font-size:.88rem;box-shadow:0 8px 35px #0006;opacity:0;visibility:hidden;transition:opacity .15s,transform .15s;z-index:20;width:max-content;max-width:calc(100vw - 28px)}
-.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
-#saveWarn{padding:10px;background:#382c1b;text-align:center;color:var(--gold);font-size:.84rem}
+.studypanel{margin-top:16px}.studyIntro{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px}.studyIntro h3{font-size:1.7rem;letter-spacing:-.04em;margin:5px 0}.studyIntro p,.studyScore p,.studyMethod p{color:var(--muted);font-size:.9rem;line-height:1.55}.studyRef{flex-shrink:0;text-align:right;display:grid;gap:4px;color:var(--muted);font-size:.8rem}.studyRef strong{font:550 1.15rem var(--mono);color:var(--text)}.studyResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 20px 14px}.studyResults .summarybox{background:#1c2027;padding:13px}.studyResults .summarybox b{font-size:1.05rem;margin-top:6px}.studyScore{margin:0 20px 16px}.studyScore b{font-size:.94rem}.studyMethod{border-top:1px solid var(--border);padding:12px 20px}.studyMethod summary{cursor:pointer;color:var(--gold);font-size:.85rem}.studyMethod p{margin-top:6px}.pipUnit{color:var(--muted);font-size:.78rem}.pipUnit select{background:var(--surface);color:var(--text);padding:5px 8px;border:1px solid var(--border);border-radius:5px}
+@media(max-width:600px){.studyIntro{display:block}.studyRef{margin-top:10px;text-align:left;display:flex;align-items:center;flex-wrap:wrap}.studyResults{grid-template-columns:1fr}.studyRef small{flex-basis:100%}}
 
-.studypanel{margin-top:16px}
-.studyIntro{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px}
-.studyIntro h3{font-size:1.55rem;letter-spacing:-.04em;margin:4px 0}
-.studyIntro p,.studyScore p,.studyMethod p{color:var(--muted);font-size:.88rem;line-height:1.55}
-.studyRef{flex-shrink:0;text-align:right;display:grid;gap:4px;color:var(--muted);font-size:.8rem}
-.studyRef strong{font:550 1.12rem var(--mono);color:var(--text)}
-.studyResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 20px 14px}
-.studyResults .summarybox{background:#1c2027;padding:13px}
-.studyResults .summarybox b{font-size:1.05rem;margin-top:5px}
-.studyScore{margin:0 20px 14px}
-.studyMethod{border-top:1px solid var(--border);padding:12px 20px}
-.studyMethod summary{cursor:pointer;color:var(--gold);font-size:.85rem}
-.pipUnit{color:var(--muted);font-size:.78rem}
-.pipUnit select{background:var(--surface);color:var(--text);padding:5px 8px;border:1px solid var(--border);border-radius:5px}
-.ticketinfo,.ticketcontrols{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ticketinfo{justify-content:space-between;font-size:.86rem;color:var(--muted);margin-bottom:12px}
-.ticketinfo strong{color:var(--text);font-weight:500}
-.ticketcontrols label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.82rem}
-.ticketcontrols select,.ticketcontrols input[type=number]{background:#13161a;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;width:110px}
-.ticketcontrols .buy,.ticketcontrols .sell{flex:1;min-width:105px}
-footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin:28px 0 0;padding:18px 0 24px;color:#9299a7;font-size:.78rem;flex-wrap:wrap;gap:8px}
-.footerBrand{font-weight:600;letter-spacing:-.035em}
-
-@media(max-width:1060px){
-  .frame{width:calc(100% - 36px)}
-  .gridmain,.lowergrid{grid-template-columns:minmax(0,1fr)}
-  .spotstats{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media(max-width:700px){
-  .frame{width:calc(100% - 24px)}
-  .topbar{flex-wrap:wrap;gap:0;min-height:0;padding-top:12px}
-  .topbar nav{width:100%;order:3;gap:16px;overflow-x:auto;margin-top:6px;scrollbar-width:none}
-  .topbar nav a{padding:12px 0;font-size:.84rem}
-  .titlebar{padding:20px 0 14px;flex-wrap:wrap}
-  .spotstats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-  .spotstats .featured{grid-column:1/-1}
-  .plot{height:260px}
-  .summary3,.guidegrid,.studyResults{grid-template-columns:1fr}
-  .studyIntro{display:block}
-  .studyRef{margin-top:10px;text-align:left}
-  .tablewrap th,.tablewrap td{padding:9px 8px;font-size:.77rem}
-}
-</style>
-</head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
-<header>
-  <div class="frame topbar">
-    <a class="brand" href="#workspace" aria-label="Aurum Desk workspace">
-      <span class="brandmark" aria-hidden="true"><i></i><i></i><i></i></span>Aurum<span>Desk</span>
-    </a>
-    <nav aria-label="Main navigation">
-      <a href="#workspace" data-nav="workspace">Market monitor</a>
-      <a href="#practice" data-nav="practice">Paper practice</a>
-      <a href="#journal" data-nav="journal">Trade journal</a>
-      <a href="#guide" data-nav="guide">Indicator guide</a>
-      <a href="#market" data-nav="market">TradingView</a>
-    </nav>
-    <button class="btn alertbtn" id="alertOpen"><i data-icon="bell"></i>Alerts</button>
-  </div>
-</header>
-
+.analysisLinks{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:auto;border-top:1px solid var(--border)}.analysisLinks .cardlink{border:0;margin:0}
+</style></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header><div class="frame topbar"><a class="brand" href="#workspace" aria-label="Aurum Desk workspace"><span class="brandmark" aria-hidden="true"><i></i><i></i><i></i></span>Aurum<span>Desk</span></a><nav aria-label="Main navigation"><a href="#workspace" data-nav="workspace">Market monitor</a><a href="#practice" data-nav="practice">Paper practice</a><a href="#journal" data-nav="journal">Trade journal</a><a href="#guide" data-nav="guide">Indicator guide</a><a href="#market" data-nav="market">TradingView</a></nav><button class="btn alertbtn" id="alertOpen"><i data-icon="bell"></i>Alerts</button></div></header>
 <main id="main" class="frame">
-  <!-- WORKSPACE -->
-  <section id="workspace" data-page>
-    <div class="titlebar">
-      <div>
-        <div class="eyebrow"><span class="statusdot" id="liveDot"></span>XAUUSD · Gold Spot Real-Time Scalping</div>
-        <h1>Signal &amp; Minute Monitor</h1>
-      </div>
-      <div class="playback">
-        <span class="timer"><i data-icon="clock"></i>Next candle <b class="mono" id="timer">—</b></span>
-        <button class="btn" id="refresh">Refresh data</button>
-      </div>
-    </div>
-
-    <div class="feedline">
-      <span id="feedBadge" class="feedbadge">Connecting</span>
-      <span id="feedText" aria-live="polite">Connecting to live XAUUSD candles &amp; spot tick stream…</span>
-    </div>
-
-    <details class="connections">
-      <summary>Data connections</summary>
-      <div>
-        <span>Candles · Deriv WebSocket (M1 / M5 / M15)</span><b id="connWS">Connecting…</b>
-        <span>Live Quote · Deriv Tick Stream</span><b id="connStream">Connecting…</b>
-        <span>Fallback Quote · Gold API HTTPS</span><b id="connSpot">Standby</b>
-        <span>Fallback Candles · PAXG/USDT HTTPS</span><b id="connHTTPS">Standby</b>
-      </div>
-    </details>
-
-    <div class="stats spotstats">
-      <article class="metric featured">
-        <div class="metricLabel"><span class="gold">XAUUSD</span><span class="divider">/</span>Live Spot <small id="spotAge"></small></div>
-        <div class="metvalue mono" id="spotValue">—</div>
-        <div class="meta" id="spotMeta">Waiting for live tick…</div>
-        <div class="ingots" aria-hidden="true"><i></i><i></i><i></i></div>
-      </article>
-      <article class="metric">
-        <div class="metricLabel">Last M1 close</div>
-        <div class="metvalue mono" id="quote">—</div>
-        <div class="meta" id="quoteMeta">USD per troy ounce</div>
-      </article>
-      <article class="metric">
-        <div class="metricLabel">M1 close change</div>
-        <div class="metvalue mono" id="delta">—</div>
-        <div class="meta" id="deltaMeta">Versus previous minute</div>
-      </article>
-      <article class="metric">
-        <div class="metricLabel">M5 candle range</div>
-        <div class="metvalue mono" id="range5">—</div>
-        <div class="meta" id="rangeMeta">High minus low · USD/oz</div>
-      </article>
-      <article class="metric">
-        <div class="metricLabel">M15 trend &amp; range</div>
-        <div class="metvalue mono" id="close15">—</div>
-        <div class="meta" id="close15Meta">Waiting for 15m structure</div>
-      </article>
-    </div>
-
-    <div class="gridmain">
-      <!-- LIVE CHART -->
-      <article class="panel livechart">
-        <div class="panelhead">
-          <div class="instrument">
-            <div class="tickerIcon"><i data-icon="bars"></i></div>
-            <div>
-              <h2>Gold / US Dollar (XAUUSD)</h2>
-              <div class="subline"><span id="chartProvider">Live Market Data</span> <b>·</b> <span id="candleKind">Closed candles + live spot</span></div>
-            </div>
-          </div>
-          <div class="rangegroup" aria-label="Chart timeframe">
-            <button data-tf="1" aria-pressed="true">M1</button>
-            <button data-tf="5" aria-pressed="false">M5</button>
-            <button data-tf="15" aria-pressed="false">M15</button>
-          </div>
-        </div>
-        <div class="chartmeta">
-          <div class="ohlc mono" id="ohlc">Awaiting candle data…</div>
-          <div class="overlays">
-            <button id="emaFast" aria-pressed="true"><span class="line fast"></span> EMA 9</button>
-            <button id="emaSlow" aria-pressed="true"><span class="line slow"></span> EMA 21</button>
-            <button id="showLevels" aria-pressed="true"><span class="line lvline"></span> SL / TP Lines</button>
-          </div>
-        </div>
-        <div class="plot">
-          <canvas id="chart" tabindex="0" aria-label="XAUUSD candlestick chart with Entry, Stop Loss, and Collect Profit levels. Use left and right arrows to inspect candles."></canvas>
-          <div class="plotempty" id="chartEmpty">Connecting to live XAUUSD market feed…</div>
-        </div>
-        <div class="marketframe emergency" id="backupFrame" hidden></div>
-        <div class="chartfoot">
-          <span id="chartCaption">Times in UTC</span>
-          <a id="liveRef" class="textbtn" href="https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&amp;interval=1" target="_blank" rel="noopener noreferrer">Open TradingView</a>
-          <span class="barcounts" aria-label="Number of candles">
-            <button data-count="36">36</button>
-            <button data-count="72" aria-pressed="true">72</button>
-            <button data-count="144">144</button> bars
-          </span>
-        </div>
-      </article>
-
-      <!-- REAL-TIME SCALPING SIGNAL, PROBABILITY & STOP / COLLECT PROFIT PANEL -->
-      <aside class="panel readpanel">
-        <div class="signalhead">
-          <h2><i class="gold" data-icon="pulse"></i> Real-Time Entry Signal</h2>
-          <span class="tag wait" id="clarityTag">CHECKING</span>
-        </div>
-
-        <div class="signalHeroBox wait" id="signalHeroBox">
-          <div class="sigicon gold" id="signalIcon"><i data-icon="wait"></i></div>
-          <div>
-            <div class="smallcap" id="signalSubcap">M1 + M5 SCALP · M15 FILTER</div>
-            <div class="signalword gold" id="direction">WAIT</div>
-          </div>
-        </div>
-
-        <p id="summary" class="explain">Analyzing live M1, M5, and M15 market structure before issuing an entry.</p>
-
-        <!-- Probability Meter -->
-        <div class="probBox">
-          <div class="probHead">
-            <span class="up mono">BUY <b id="buyProbTxt">50%</b></span>
-            <span class="muted">Scalp Probability (M1/M5/M15)</span>
-            <span class="down mono"><b id="sellProbTxt">50%</b> SELL</span>
-          </div>
-          <div class="probBar" aria-label="Buy versus Sell probability bar">
-            <div class="probBuyFill" id="buyProbBar" style="width:50%"></div>
-            <div class="probSellFill" id="sellProbBar" style="width:50%"></div>
-          </div>
-          <div class="nextLean">
-            <span>Next probable move: <strong id="nextMoveTxt">Evaluating…</strong></span>
-            <span class="mono" id="triggerHint">Trigger: —</span>
-          </div>
-        </div>
-
-        <!-- Entry / Stop Loss / Collect Profit Grid -->
-        <div class="levelsGrid">
-          <div class="lvlCard entry">
-            <div class="smallcap"><span>Entry Price</span><span id="entrySideTag">—</span></div>
-            <b id="lvlEntry">—</b>
-            <small id="lvlEntrySub">Waiting for clear signal</small>
-          </div>
-          <div class="lvlCard sl">
-            <div class="smallcap"><span>Stop Loss (SL)</span><span class="down" id="lvlSlPips">—</span></div>
-            <b class="down" id="lvlSl">—</b>
-            <small id="lvlSlSub">ATR + swing invalidation</small>
-          </div>
-          <div class="lvlCard tp">
-            <div class="smallcap"><span>Collect Profit (TP1)</span><span class="up" id="lvlTp1Pips">1.5R</span></div>
-            <b class="up" id="lvlTp1">—</b>
-            <small id="lvlTp1Sub">Primary scalp target</small>
-          </div>
-          <div class="lvlCard tp">
-            <div class="smallcap"><span>Extended Profit (TP2)</span><span class="up" id="lvlTp2Pips">2.5R</span></div>
-            <b class="up" id="lvlTp2">—</b>
-            <small id="lvlTp2Sub">Runner / move SL to BE</small>
-          </div>
-        </div>
-
-        <!-- M1 / M5 / M15 Confluence Breakdown -->
-        <div class="mtfRow" id="mtfRow">
-          <div class="mtfChip"><div class="mhead"><span>M1</span><span>—</span></div><strong>Waiting</strong><small>RSI —</small></div>
-          <div class="mtfChip"><div class="mhead"><span>M5</span><span>—</span></div><strong>Waiting</strong><small>RSI —</small></div>
-          <div class="mtfChip"><div class="mhead"><span>M15</span><span>—</span></div><strong>Waiting</strong><small>RSI —</small></div>
-        </div>
-
-        <!-- Active Trade Stop & Collect Profit Manager -->
-        <div class="trackerBox" id="trackerBox">
-          <div class="trackerHead">
-            <strong id="trackerTitle">Live Signal Tracker · Idle</strong>
-            <span class="mono" id="trackerPnl">0.0 pips</span>
-          </div>
-          <div id="trackerBody" class="meta">Activate a BUY/SELL signal below to monitor Stop Loss &amp; Collect Profit automatically on live ticks.</div>
-          <div class="progressWrap" id="trackerProgressWrap" hidden>
-            <div class="progressTrack"><div class="progressFill" id="trackerProgressFill" style="width:50%"></div></div>
-            <div class="progressLabels"><span class="down" id="progSl">SL</span><span id="progNow">Spot</span><span class="up" id="progTp">TP1</span></div>
-          </div>
-          <div class="trackerBtns" id="trackerBtns">
-            <button class="btn primary sm" id="btnTakeSignal" disabled>Track Current Signal</button>
-            <button class="btn buy sm" id="btnCollectProfit" hidden>Collect Profit Now</button>
-            <button class="btn sm" id="btnMoveBE" hidden>Move SL → BE</button>
-            <button class="btn sell sm" id="btnStopTrade" hidden>Stop / Exit</button>
-          </div>
-        </div>
-
-        <!-- Risk Settings -->
-        <div class="riskToolbar">
-          <label>Risk profile
-            <select id="riskProfile" aria-label="Stop loss ATR risk profile">
-              <option value="tight">Tight Scalp (1.0× ATR)</option>
-              <option value="balanced" selected>Balanced (1.3× ATR)</option>
-              <option value="wide">Wide Buffer (1.8× ATR)</option>
-            </select>
-          </label>
-          <label>
-            <input type="checkbox" id="autoTrackChk"> Auto-track signals
-          </label>
-        </div>
-
-        <div class="analysisLinks">
-          <a class="cardlink" href="#practice"><i data-icon="pulse"></i>Historical replay</a>
-          <a class="cardlink" href="#guide"><i data-icon="book"></i>Strategy rules</a>
-        </div>
-      </aside>
-    </div>
-
-    <!-- LOWER GRID: TIMEFRAME COMPARISON + SIGNAL & MINUTE LOG -->
-    <div class="lowergrid">
-      <article class="panel">
-        <div class="sectionhead">
-          <h2><i class="gold" data-icon="layers"></i> Timeframe Comparison (M1 / M5 / M15)</h2>
-          <span class="tag">LIVE STRUCTURE</span>
-        </div>
-        <div class="tablewrap">
-          <table>
-            <thead>
-              <tr><th>Period</th><th>Close · UTC</th><th>Close</th><th>EMA 9/21</th><th>RSI 14</th><th>ATR 14</th><th>Bias</th></tr>
-            </thead>
-            <tbody id="comparison"></tbody>
-          </table>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="sectionhead">
-          <h2><i class="gold" data-icon="activity"></i> Signal &amp; Execution Log</h2>
-          <button class="btn sm" id="clearSigLog">Clear</button>
-        </div>
-        <div id="signalLog" class="log"><div class="meta">Real-time BUY, SELL, Collect Profit, and Stop Loss events will appear here.</div></div>
-        <div class="sectionhead" style="border-top:1px solid var(--border)">
-          <h2><i class="gold" data-icon="clock"></i> Latest M1 Closes</h2>
-          <span class="meta">UTC</span>
-        </div>
-        <div id="log" class="log"></div>
-      </article>
-    </div>
-  </section>
-
-  <!-- PAPER PRACTICE -->
-  <section id="practice" data-page hidden>
-    <div class="titlebar">
-      <div><div class="eyebrow">Historical candles · virtual USD</div><h1>Paper practice</h1></div>
-      <a class="btn" href="#journal">Trade journal</a>
-    </div>
-    <article class="panel method">
-      <h2>Historical entry review (M1 / M5 / M15)</h2>
-      <p>Practice on past Gold/USD candles with a $10,000 starting balance. Choose M1, M5, or M15 to study past entries with Stop Loss and Collect Profit targets. Advance the replay manually or automatically to see how each setup resolves.</p>
-      <div class="dialogActions">
-        <label for="paperInterval">Replay period </label>
-        <select id="paperInterval">
-          <option value="1">M1</option>
-          <option value="5" selected>M5</option>
-          <option value="15">M15</option>
-        </select>
-        <button class="btn primary" id="historyLoad">Load past market candles</button>
-        <label class="btn" for="csvFile">Import historical CSV</label>
-        <input id="csvFile" type="file" accept=".csv,text/csv">
-        <button class="btn" id="step">Next historical candle</button>
-      </div>
-      <p class="meta">CSV import requires 145–5,000 historical XAUUSD candles (time, open, high, low, close) ending before today UTC.</p>
-      <p id="practiceMsg" aria-live="polite" class="feedback"></p>
-    </article>
-
-    <article class="panel studypanel">
-      <div class="sectionhead">
-        <h2><i class="gold" data-icon="pulse"></i> Learning model</h2>
-        <label class="pipUnit">One pip
-          <select id="pipUnit" aria-label="Value of one pip in USD per ounce">
-            <option value="0.01">$0.01</option>
-            <option value="0.1" selected>$0.10</option>
-          </select> USD/oz
-        </label>
-      </div>
-      <div id="studyContent"></div>
-      <details class="studyMethod">
-        <summary>How the model learns and counts pips</summary>
-        <p>The model matches the 15 most similar prior candles using normalized body size, 3-bar drift, closing location, and range expansion. When at least 10 of 15 moved in the same direction by the next close, it projects a paper BUY or SELL; otherwise it signals WAIT.</p>
-      </details>
-    </article>
-
-    <div class="summary3" id="paperStats"></div>
-    <article class="panel">
-      <div class="sectionhead"><h2>Practice position</h2><span class="tag" id="paperDate">HISTORICAL</span></div>
-      <div id="paperTicket"></div>
-    </article>
-  </section>
-
-  <!-- JOURNAL -->
-  <section id="journal" data-page hidden>
-    <div class="titlebar">
-      <div><div class="eyebrow">Account history</div><h1>Trade journal</h1></div>
-      <div class="playback">
-        <button class="btn" id="clearJournal">Reset journal</button>
-        <a class="btn primary" href="#practice">Open practice</a>
-      </div>
-    </div>
-    <div id="journalStats" class="summary3"></div>
-    <article class="panel">
-      <div class="sectionhead"><h2>Closed trades (Live Tracker &amp; Paper Practice)</h2><span class="meta">Saved in browser</span></div>
-      <div id="journalBody"></div>
-    </article>
-  </section>
-
-  <!-- GUIDE -->
-  <section id="guide" data-page hidden>
-    <div class="titlebar"><div><div class="eyebrow">Reference</div><h1>Scalping Signal &amp; Indicator Guide</h1></div></div>
-    <article class="panel method">
-      <h2>How the Real-Time M1 / M5 / M15 Signal Engine Works</h2>
-      <p>The monitor streams live XAUUSD ticks and closed M1 candles from Deriv WebSocket and aggregates aligned M5 and M15 candles (supplemented with direct M15 history when needed). Every tick and candle close updates a weighted probability model: M1 scalping momentum (30%), M5 structure (30%), M15 trend filter (20%), k-NN historical pattern similarity (15%), and live spot pressure (5%).</p>
-      <p><strong>When it shows WAIT:</strong> If M1 and M5 disagree, EMA 9/21 separation is too flat (choppy market), RSI is exhausted (&gt;76 for Buy or &lt;24 for Sell), probability is below 62%, or the data feed is delayed/closed, the system blocks entry and displays <strong>WAIT</strong> alongside the next probable lean and breakout trigger price.</p>
-      <p><strong>Stop Loss &amp; Collect Profit:</strong> Stops combine recent 5-bar swing highs/lows with ATR(14) volatility buffers. Collect Profit (TP1) targets 1.5× risk and Extended Profit (TP2) targets 2.5× risk. All signals are analytical decision aids—always verify broker spreads, news events, and risk limits before trading live capital.</p>
-    </article>
-    <div id="guideCards" class="guidegrid"></div>
-  </section>
-
-  <!-- TRADINGVIEW -->
-  <section id="market" data-page hidden>
-    <div class="titlebar">
-      <div><div class="eyebrow">TradingView · Reference</div><h1>Reference chart</h1></div>
-      <div class="rangegroup" aria-label="Reference timeframe">
-        <button data-tv="1" aria-pressed="true">M1</button>
-        <button data-tv="5" aria-pressed="false">M5</button>
-        <button data-tv="15" aria-pressed="false">M15</button>
-      </div>
-    </div>
-    <article class="panel">
-      <div class="sectionhead">
-        <h2>Gold / US Dollar</h2>
-        <a class="textbtn" id="tvLink" href="https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&amp;interval=1" target="_blank" rel="noopener noreferrer">Open full chart</a>
-      </div>
-      <p class="marketnote">TradingView displays ICE indicative quotes including the forming candle. Feed prices may vary slightly from Deriv spot quotes.</p>
-      <div class="marketframe" id="marketFrame"></div>
-    </article>
-  </section>
-
-  <footer>
-    <span class="footerBrand">Aurum Desk</span>
-    <span>XAUUSD Real-Time Scalping Monitor · M1 / M5 / M15 · Times in UTC</span>
-  </footer>
-</main>
-
-<!-- ALERTS DIALOG -->
-<dialog id="alertsDlg" aria-labelledby="alertsTitle">
-  <div class="dlghead">
-    <div><div class="eyebrow">Market monitor</div><h2 id="alertsTitle">Signal &amp; Candle Alerts</h2></div>
-    <button class="iconbtn" id="dismiss" aria-label="Close"><i data-icon="x"></i></button>
-  </div>
-  <p>Receive audio chimes, in-page toasts, or desktop alerts when a new BUY/SELL signal fires, a candle closes, or Stop Loss / Collect Profit is reached.</p>
-  <div class="setting">
-    <label for="alertInterval">Candle-close notifications</label>
-    <select id="alertInterval">
-      <option value="0">Off</option>
-      <option value="1">M1 close</option>
-      <option value="5">M5 close</option>
-      <option value="15">M15 close</option>
-    </select>
-  </div>
-  <div class="setting">
-    <div><b>Signal &amp; TP/SL audio chime</b><small>Play a tone when BUY/SELL triggers or SL/TP hits.</small></div>
-    <input type="checkbox" id="soundAlerts" checked>
-  </div>
-  <div class="setting">
-    <div><b>Desktop notifications</b><small id="desktopHint">Browser notification permission</small></div>
-    <button class="btn sm" id="desktop">Enable</button>
-  </div>
-  <div class="dialogActions">
-    <button class="btn primary" id="testAlert">Test alert</button>
-  </div>
-  <p class="feedback" id="alertMsg" aria-live="polite"></p>
-</dialog>
-
-<div class="toast" id="toast" role="status"></div>
-<div id="saveWarn" hidden role="status"></div>
-<noscript><p>Enable JavaScript to run Aurum Desk.</p></noscript>
-
-<script>
-"use strict";
-
-/* ==================== CONSTANTS & UTILITIES ==================== */
-const MIN = 60000, FIVE = 5 * MIN, FIFTEEN = 15 * MIN;
-const WS_ENDPOINTS = [
-  'wss://api.derivws.com/trading/v1/options/ws/public',
-  'wss://ws.derivws.com/websockets/v3?app_id=1089'
-];
-const INSTRUMENT = 'frxXAUUSD';
-const STORE_KEY = 'aurum_desk_v3';
-
-const $ = id => document.getElementById(id);
-const last = arr => arr && arr.length ? arr[arr.length - 1] : null;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const moneyRound = v => Math.round((v + Number.EPSILON) * 100) / 100;
-const fmt = v => Number.isFinite(v) ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
-const signed = v => Number.isFinite(v) ? (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v)) : '—';
-const utcClock = t => new Date(t).toISOString().slice(11, 16);
-const utcSec = t => new Date(t).toISOString().slice(11, 19);
-const stamp = t => new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
-const numeric = v => (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(Number(v));
-
-const icons = {
-  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
-  layers: '<path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/>',
-  bell: '<path d="M18 10a6 6 0 0 0-12 0c0 5-2 6-3 7h18c-1-1-3-2-3-7ZM10 20a2.4 2.4 0 0 0 4 0"/>',
-  bars: '<path d="m8 9 2-5h4l2 5zM2 17l2-5h5l2 5zM13 17l2-5h5l2 5z"/>',
-  pulse: '<path d="M2 12h5l3-7 4 14 3-7h5"/>',
-  book: '<path d="M3 5c4-1 6-1 9 1 3-2 6-2 9-1v14c-4-1-6-1-9 1-3-2-5-2-9-1zM12 6v14"/>',
-  activity: '<path d="M3 9a9 9 0 1 1 0 6M3 4v5h5M12 7v5l3 2"/>',
-  buy: '<path d="m3 16 6-6 4 4 8-9m-7 0h7v7"/>',
-  sell: '<path d="m3 7 6 6 4-4 8 9m-7 0h7v-7"/>',
-  wait: '<path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.3" fill="var(--panel)"/><circle cx="15" cy="16" r="2.3" fill="var(--panel)"/>',
-  x: '<path d="m6 6 12 12M18 6 6 18"/>'
-};
-const icon = k => '<svg aria-hidden="true" focusable="false" class="ic" viewBox="0 0 24 24">' + (icons[k] || '') + '</svg>';
-document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
-
-function pipSize() { return state.paper.studyPip === 0.01 ? 0.01 : 0.1; }
-function pipText(priceDiff, pip = pipSize()) {
-  if (!Number.isFinite(priceDiff)) return '—';
-  const v = priceDiff / pip;
-  return (v < 0 ? '−' : v > 0 ? '+' : '') + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' pips';
-}
-
-/* ==================== AUDIO & TOAST ALERTS ==================== */
-let toastTimer = null;
-function showToast(msg) {
-  const el = $('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 4200);
-}
-function playTone(type = 'info') {
-  if (!state.alerts.sound) return;
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    const freq = type === 'buy' ? 660 : type === 'sell' ? 420 : type === 'tp' ? 880 : type === 'sl' ? 260 : 520;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    osc.type = type === 'sl' ? 'sawtooth' : 'sine';
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
-    osc.start(); osc.stop(ctx.currentTime + 0.29);
-  } catch {}
-}
-function notifyUser(title, body, tone = 'info') {
-  showToast(title + ' — ' + body);
-  playTone(tone);
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification(title, { body }); } catch {}
+<section id="workspace" data-page>
+<div class="titlebar"><div><div class="eyebrow"><span class="statusdot"></span>XAUUSD · Gold spot</div><h1>Minute monitor</h1></div><div class="playback"><span class="timer"><i data-icon="clock"></i>Next check <b class="mono" id="timer">—</b></span><button class="btn" id="refresh">Refresh data</button></div></div>
+<div class="feedline"><span id="feedBadge" class="feedbadge">Connecting</span><span id="feedText" aria-live="polite">Requesting Gold/USD market candles…</span></div>
+<details class="connections"><summary>Data connections</summary><div><span>Candles · biquote HTTPS</span><b id="connHTTPS">Waiting</b><span>Candles · Deriv WebSocket</span><b id="connWS">Standby</b><span>Quote · Deriv ticks</span><b id="connStream">Connecting</b><span>Quote · Gold API HTTPS</span><b id="connSpot">Waiting</b></div></details>
+<div class="stats spotstats">
+<article class="metric featured"><div class="metricLabel"><span class="gold">XAUUSD</span><span class="divider">/</span>Spot quote <small id="spotAge"></small></div><div class="metvalue mono" id="spotValue">—</div><div class="meta" id="spotMeta">Waiting for market price…</div><div class="ingots" aria-hidden="true"><i></i><i></i><i></i></div></article>
+<article class="metric"><div class="metricLabel">Last M1 close</div><div class="metvalue mono" id="quote">—</div><div class="meta" id="quoteMeta">USD per troy ounce</div></article>
+<article class="metric"><div class="metricLabel">M1 close change</div><div class="metvalue mono" id="delta">—</div><div class="meta" id="deltaMeta">Versus the previous minute</div></article>
+<article class="metric"><div class="metricLabel">M5 candle range</div><div class="metvalue mono" id="range5">—</div><div class="meta" id="rangeMeta">High minus low · USD/oz</div></article>
+<article class="metric"><div class="metricLabel">M5 close time</div><div class="metvalue mono" id="close5">—</div><div class="meta" id="closeMeta">Requires five consecutive minutes</div></article></div>
+<div class="gridmain">
+<article class="panel livechart"><div class="panelhead"><div class="instrument"><div class="tickerIcon"><i data-icon="bars"></i></div><div><h2>Gold / US Dollar</h2><div class="subline"><span id="chartProvider">XAUUSD market data</span> <b>·</b> <span id="candleKind">Closed candles</span></div></div></div><div class="rangegroup" aria-label="Chart timeframe"><button data-tf="1" aria-pressed="true">M1</button><button data-tf="5" aria-pressed="false">M5</button></div></div>
+<div class="chartmeta"><div class="ohlc mono" id="ohlc">Awaiting candle data</div><div class="overlays"><button id="emaFast" aria-pressed="true"><span class="line fast"></span> EMA 9</button><button id="emaSlow" aria-pressed="true"><span class="line slow"></span> EMA 21</button></div></div>
+<div class="plot"><canvas id="chart" tabindex="0" aria-label="Market candlestick chart. Use the left and right arrow keys to inspect candles."></canvas><div class="plotempty" id="chartEmpty">Waiting for the market feed…</div></div>
+<div class="marketframe emergency" id="backupFrame" hidden></div><div class="chartfoot"><span id="chartCaption">Times in UTC</span><a id="liveRef" class="textbtn" href="https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&amp;interval=1" target="_blank" rel="noopener noreferrer">Open TradingView chart</a><span class="barcounts" aria-label="Number of candles"><button data-count="36">36</button><button data-count="72" aria-pressed="true">72</button><button data-count="144">144</button> bars</span></div></article>
+<aside class="panel readpanel"><div class="signalhead"><h2><i class="gold" data-icon="pulse"></i> Candle analysis</h2><span class="tag" id="analysisTf">M1</span></div><div class="readhero"><div class="smallcap">Last completed candle</div><div class="signalword" id="direction">Waiting</div><p id="summary" class="explain">A reading will appear after a completed candle arrives.</p></div><div id="details" class="details"></div><div class="analysisLinks"><a class="cardlink" href="#practice"><i data-icon="pulse"></i>Historical entry model</a><a class="cardlink" href="#guide"><i data-icon="book"></i>Read the indicators</a></div></aside></div>
+<div class="lowergrid"><article class="panel"><div class="sectionhead"><h2><i class="gold" data-icon="layers"></i> Timeframe comparison</h2><span class="tag">CLOSED BARS</span></div><div class="tablewrap"><table><thead><tr><th>Period</th><th>Close · UTC</th><th>Close price</th><th>Body</th><th>Range</th></tr></thead><tbody id="comparison"></tbody></table></div></article><article class="panel"><div class="sectionhead"><h2><i class="gold" data-icon="activity"></i> Minute log</h2><span class="meta">Latest closes</span></div><div id="log" class="log"></div></article></div></section>
+<section id="practice" data-page hidden><div class="titlebar"><div><div class="eyebrow">Historical candles · virtual USD</div><h1>Paper practice</h1></div><a class="btn" href="#journal">Trade journal</a></div><article class="panel method"><h2>Historical entry review</h2><p>Practice on past Gold/USD candles with a $10,000 starting balance. Choose M1 or M5 to study a past entry. Note the candle’s range, record a paper position, then advance the replay to see how the price changed. The replay also advances at the selected interval while this view is open. You can also move forward manually. Fills use the displayed close and exclude fees, spread and slippage.</p><div class="dialogActions"><label for="paperInterval">Replay period </label><select id="paperInterval"><option value="1">M1</option><option value="5" selected>M5</option></select><button class="btn" id="historyLoad">Load past market candles</button><label class="btn filelabel" for="csvFile">Import historical CSV</label><input id="csvFile" type="file" accept=".csv,text/csv"><button class="btn" id="step">Next historical candle</button></div><p class="meta">For CSV import, select the matching replay period. Include 145–5,000 historical XAUUSD M1 or M5 candles ending before today (UTC). Use time, open, high, low and close columns with Unix or time-zone-qualified ISO timestamps.</p><p id="practiceMsg" aria-live="polite" class="feedback"></p></article>
+<article class="panel studypanel"><div class="sectionhead"><h2><i class="gold" data-icon="pulse"></i> Learning model</h2><label class="pipUnit">One pip <select id="pipUnit" aria-label="Value of one pip in USD per ounce"><option value="0.01">$0.01</option><option value="0.1">$0.10</option></select> USD/oz</label></div><div id="studyContent"></div><details class="studyMethod"><summary>How the model learns and counts pips</summary><p>The model finds the 15 most similar earlier candles from the same feed and timeframe. It compares candle body, three-bar price change, closing position and range relative to the average five-bar range. If at least 10 of the 15 moved the same way by the next close, the model calls a paper buy or sell. Otherwise it waits. A match count describes these past examples only.</p><p>Projected pips use the earlier next-close movements scaled to the current replay’s recent range. The middle 50% spans the 25th to 75th percentile. Larger moves and losses can occur. A pip is the USD-per-ounce increment you select. All results exclude the spread, fees and slippage.</p><p>Each new candle reveals one outcome. The browser keeps up to 1,200 completed examples per feed and timeframe. Accuracy covers directional calls in the latest 100 evaluated observations, counting flat outcomes as misses. Warm-up history supplies examples. Only first-time, previously issued calls are graded. Importing a CSV starts a separate run for that file.</p></details></article>
+<div class="summary3" id="paperStats"></div><article class="panel"><div class="sectionhead"><h2>Practice position</h2><span class="tag" id="paperDate">HISTORICAL</span></div><div id="paperTicket"></div></article></section>
+<section id="journal" data-page hidden><div class="titlebar"><div><div class="eyebrow">Paper account</div><h1>Trade journal</h1></div><a class="btn" href="#practice">Open practice</a></div><div id="journalStats" class="summary3"></div><article class="panel"><div class="sectionhead"><h2>Closed paper trades</h2><span class="meta">Saved in this browser</span></div><div id="journalBody"></div></article></section>
+<section id="guide" data-page hidden><div class="titlebar"><div><div class="eyebrow">Reference</div><h1>Indicator guide</h1></div></div><article class="panel method"><h2>How the minute check works</h2><p>The monitor reads XAUUSD M1 candles from biquote over HTTPS, with Deriv as a second candle source. Analysis uses one provider at a time. The chart shows the source and checks for newly closed candles each minute. An M5 candle covers a UTC block such as 10:00–10:05 and appears only after all five consecutive minutes arrive. The spot card streams Deriv ticks while available or displays Gold API’s separately timestamped USD quote, checked every 30 seconds. The M1 close card shows the last completed minute. Spot and candle feeds can quote different prices.</p><p>Each indicator starts again after a gap in the series. A dash means the required readings are missing. After a feed interruption or an old close, the monitor labels the data and pauses alerts. TradingView shows ICE’s separate indicative quote, so the two charts can differ.</p></article><div id="guideCards" class="guidegrid"></div></section>
+<section id="market" data-page hidden><div class="titlebar"><div><div class="eyebrow">TradingView · ICE data</div><h1>Reference chart</h1></div><div class="rangegroup" aria-label="Reference timeframe"><button data-tv="1" aria-pressed="true">M1</button><button data-tv="5" aria-pressed="false">M5</button></div></div><article class="panel"><div class="sectionhead"><h2>Gold / US Dollar</h2><a class="textbtn" id="tvLink" href="https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&amp;interval=1" target="_blank" rel="noopener noreferrer">Open full chart</a></div><p class="marketnote">TradingView includes the forming candle. The minute monitor uses completed candles from the feed named on its chart.</p><div class="marketframe" id="marketFrame"></div></article></section>
+<footer><span class="footerBrand">Aurum Desk</span><span>XAUUSD market study <b>·</b> Times in UTC</span></footer></main>
+<dialog id="alertsDlg" aria-labelledby="alertsTitle"><div class="dlghead"><div><div class="eyebrow">Market monitor</div><h2 id="alertsTitle">Candle-close alerts</h2></div><button class="iconbtn" id="dismiss" aria-label="Close"><i data-icon="x"></i></button></div><p>Get a neutral summary when a new candle closes. Choose an interval and keep the page open. Late data, missing minutes and catch-up periods stay quiet.</p><div class="setting"><label for="alertInterval">In-page candle alerts</label><select id="alertInterval"><option value="0">Off</option><option value="1">M1 close</option><option value="5">M5 close</option></select></div><div class="setting"><div><b>Desktop delivery</b><small id="desktopHint"></small></div><button class="btn" id="desktop">Enable</button></div><button class="btn" id="testAlert">Test alert</button><p class="feedback" id="alertMsg" aria-live="polite"></p></dialog><div class="toast" id="toast" role="status"></div><div id="saveWarn" hidden role="status"></div><noscript><p>Enable JavaScript to load the XAUUSD market feed.</p></noscript>
+<script>"use strict";
+const MIN=60000, FIVE=5*MIN, WS_URL='wss://api.derivws.com/trading/v1/options/ws/public';
+const INSTRUMENT='frxXAUUSD';
+const last=arr=>arr[arr.length-1], moneyRound=value=>Math.round((value+Number.EPSILON)*100)/100;
+const utcClock=time=>new Date(time).toISOString().slice(11,16);
+const stamp=time=>new Date(time).toISOString().slice(0,16).replace('T',' ')+' UTC';
+const numeric=v=>(typeof v==='number'||typeof v==='string'&&v.trim()!=='')&&Number.isFinite(Number(v));
+function closedRows(rows,period,cutoff) {
+  if(!Array.isArray(rows))throw Error('The feed returned no candle series.');
+  const out=new Map(), conflicts=new Set();
+  for(const row of rows){
+    if(!row||![row.epoch,row.open,row.high,row.low,row.close].every(numeric))continue;
+    const t=Number(row.epoch)*1000, o=Number(row.open),h=Number(row.high),l=Number(row.low),c=Number(row.close);
+    if(!Number.isSafeInteger(t)||t<=0||t%period!==0||t+period>cutoff||l<=0||h<Math.max(o,l,c)||l>Math.min(o,c)||!Number.isSafeInteger(Math.round(h*100)))continue;
+    if(conflicts.has(t))continue;
+    const prev=out.get(t);
+    if(prev && (prev.o!==o || prev.h!==h || prev.l!==l || prev.c!==c)){conflicts.add(t);out.delete(t);continue;}
+    out.set(t,{t,o,h,l,c});
   }
+  return [...out.values()].sort((a,b)=>a.t-b.t);
 }
-
-/* ==================== STATE & STORAGE ==================== */
-function defaultState() {
-  return {
-    alerts: { interval: 0, sound: true },
-    riskProfile: 'balanced',
-    autoTrack: false,
-    signalHistory: [],
-    journal: [],
-    paper: {
-      balance: 10000,
-      interval: 5,
-      source: '',
-      bars: [],
-      future: [],
-      pos: null,
-      studyPip: 0.1,
-      studyBooks: {},
-      studyPending: null
-    }
-  };
-}
-let state = defaultState();
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (saved && typeof saved === 'object') {
-      state = {
-        ...defaultState(),
-        ...saved,
-        alerts: { ...defaultState().alerts, ...(saved.alerts || {}) },
-        paper: { ...defaultState().paper, ...(saved.paper || {}) }
-      };
-    }
-  } catch {
-    $('saveWarn').hidden = false;
-    $('saveWarn').textContent = 'Browser storage is restricted; journal and settings will reset on reload.';
-  }
-}
-function saveState() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {}
-}
-
-/* ==================== MARKET DATA STRUCTURES ==================== */
-const market = {
-  1: { bars: [], metrics: [] },
-  5: { bars: [], metrics: [] },
-  15: { bars: [], metrics: [] },
-  provider: '',
-  asOf: 0,
-  fetchedAt: 0,
-  spot: { price: null, prev: null, time: 0, source: '' }
-};
-
-let currentSignal = null;
-let lastAlertedSignalKey = '';
-let activeTrade = null; // { id, side, entry, sl, tp1, tp2, movedBE, openedAt, prob, risk }
-
-/* ==================== CANDLE PROCESSING & INDICATORS ==================== */
-function closedRows(rows, period, cutoff) {
-  if (!Array.isArray(rows)) throw Error('No candle series returned.');
-  const out = new Map(), conflicts = new Set();
-  for (const row of rows) {
-    if (!row || ![row.epoch, row.open, row.high, row.low, row.close].every(numeric)) continue;
-    const t = Number(row.epoch) * 1000;
-    const o = Number(row.open), h = Number(row.high), l = Number(row.low), c = Number(row.close);
-    if (!Number.isSafeInteger(t) || t <= 0 || t % period !== 0 || t + period > cutoff || l <= 0 || h < Math.max(o, l, c) || l > Math.min(o, c)) continue;
-    if (conflicts.has(t)) continue;
-    const prev = out.get(t);
-    if (prev && (prev.o !== o || prev.h !== h || prev.l !== l || prev.c !== c)) { conflicts.add(t); out.delete(t); continue; }
-    out.set(t, { t, o, h, l, c });
-  }
-  return [...out.values()].sort((a, b) => a.t - b.t);
-}
-
-function groupBars(bars, period) {
-  const n = Math.round(period / MIN);
-  const result = [];
-  for (let i = 0; i + n - 1 < bars.length; i++) {
-    const a = bars[i];
-    if (a.t % period !== 0) continue;
-    if (bars[i + n - 1].t !== a.t + (n - 1) * MIN) continue;
-    let ok = true, h = a.h, l = a.l;
-    for (let j = 1; j < n; j++) {
-      const b = bars[i + j];
-      if (b.t !== a.t + j * MIN) { ok = false; break; }
-      if (b.h > h) h = b.h;
-      if (b.l < l) l = b.l;
-    }
-    if (!ok) continue;
-    result.push({ t: a.t, o: a.o, h, l, c: bars[i + n - 1].c });
-    i += n - 1;
+function groupFive(bars) {
+  const result=[];
+  for(let i=0;i+4<bars.length;i++) {
+    const a=bars[i];
+    if(a.t%FIVE || bars[i+4].t!==a.t+4*MIN)continue;
+    const block=bars.slice(i,i+5);
+    if(!block.every((b,j)=>b.t===a.t+j*MIN))continue;
+    result.push({t:a.t,o:a.o,h:Math.max(...block.map(b=>b.h)),l:Math.min(...block.map(b=>b.l)),c:block[4].c});i+=4;
   }
   return result;
 }
-
-function measurements(bars, period) {
-  let count = 0, fast = 0, slow = 0, ema50 = 0, gain = 0, loss = 0, atr = 0, prev = null;
-  return bars.map(bar => {
-    if (!prev || bar.t !== prev.t + period) {
-      count = 0; fast = slow = ema50 = bar.c; gain = loss = atr = 0; prev = null;
+function measurements(bars,period) {
+  let count=0,fast=0,slow=0,gain=0,loss=0,atr=0,prev=null;
+  return bars.map(bar=>{
+    if(!prev||bar.t!==prev.t+period){count=0;fast=slow=bar.c;gain=loss=atr=0;prev=null;}
+    const change=prev?bar.c-prev.c:null;
+    const tr=prev?Math.max(bar.h-bar.l,Math.abs(bar.h-prev.c),Math.abs(bar.l-prev.c)):bar.h-bar.l;
+    if(count<14)atr+=tr/14;else atr=(13*atr+tr)/14;
+    if(prev){fast+=(bar.c-fast)*2/10;slow+=(bar.c-slow)*2/22;
+      if(count<=14){gain+=Math.max(0,change)/14;loss+=Math.max(0,-change)/14;}
+      else {gain=(gain*13+Math.max(0,change))/14;loss=(loss*13+Math.max(0,-change))/14;}
     }
-    const change = prev ? bar.c - prev.c : null;
-    const tr = prev ? Math.max(bar.h - bar.l, Math.abs(bar.h - prev.c), Math.abs(bar.l - prev.c)) : bar.h - bar.l;
-    if (count < 14) atr += tr / 14; else atr = (13 * atr + tr) / 14;
-    if (prev) {
-      fast += (bar.c - fast) * (2 / 10);
-      slow += (bar.c - slow) * (2 / 22);
-      ema50 += (bar.c - ema50) * (2 / 51);
-      if (count <= 14) { gain += Math.max(0, change) / 14; loss += Math.max(0, -change) / 14; }
-      else { gain = (gain * 13 + Math.max(0, change)) / 14; loss = (loss * 13 + Math.max(0, -change)) / 14; }
-    }
-    prev = bar; count++;
-    return {
-      fast: count >= 9 ? fast : null,
-      slow: count >= 21 ? slow : null,
-      ema50: count >= 50 ? ema50 : null,
-      rsi: count >= 15 ? (loss === 0 ? (gain === 0 ? 50 : 100) : 100 - 100 / (1 + gain / loss)) : null,
-      atr: count >= 14 ? atr : null,
-      change
-    };
+    prev=bar;count++;
+    return {fast:count>=9?fast:null,slow:count>=21?slow:null,
+      rsi:count>=15?(loss===0?(gain===0?50:100):100-100/(1+gain/loss)):null,atr:count>=14?atr:null,change};
   });
 }
-
-/* ==================== LIVE DATA FEEDS ==================== */
-function requestDerivCandles(period, count, history = false, epIdx = 0) {
-  return new Promise((resolve, reject) => {
-    let ws, done = false, asOf = 0, cutoff = 0;
-    const finish = (err, val) => {
-      if (done) return;
-      done = true; clearTimeout(timeout);
-      if (ws && ws.readyState < 2) ws.close();
-      if (err) {
-        if (epIdx + 1 < WS_ENDPOINTS.length) resolve(requestDerivCandles(period, count, history, epIdx + 1));
-        else reject(err);
-      } else resolve(val);
+// Fetch the provider clock first. The request ends one second before the next open bucket.
+function requestCandles(period,count,history=false) {
+  return new Promise((resolve,reject)=>{
+    let ws,done=false,asOf=0,cutoff=0,at=0;
+    const finish=(err,value)=>{
+      if(done)return;done=true;clearTimeout(timeout);if(ws&&ws.readyState!==3)ws.close();
+      if(err)reject(err);else resolve(value);
     };
-    const timeout = setTimeout(() => finish(Error('Deriv WebSocket timed out.')), 11000);
-    try { ws = new WebSocket(WS_ENDPOINTS[epIdx]); } catch { finish(Error('WebSocket blocked.')); return; }
-    ws.onopen = () => ws.send(JSON.stringify({ time: 1, req_id: 1 }));
-    ws.onerror = () => finish(Error('WebSocket connection error.'));
-    ws.onclose = () => finish(Error('WebSocket closed early.'));
-    ws.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.error) { finish(Error(msg.error.message || 'Deriv returned an error.')); return; }
-        if (msg.req_id === 1 && msg.msg_type === 'time') {
-          asOf = Number(msg.time) * 1000;
-          cutoff = Math.floor((asOf - (history ? 86400000 : 0)) / period) * period;
-          ws.send(JSON.stringify({
-            ticks_history: INSTRUMENT,
-            granularity: period / 1000,
-            style: 'candles',
-            count,
-            end: history ? String(cutoff / 1000 - 1) : 'latest',
-            adjust_start_time: 1,
-            req_id: 2
-          }));
-        } else if (msg.req_id === 2 && msg.msg_type === 'candles' && asOf) {
-          const bars = closedRows(msg.candles, period, cutoff);
-          if (!bars.length) throw Error('No closed XAUUSD candles returned.');
-          finish(null, { bars, asOf, cutoff, provider: 'Deriv XAUUSD' });
+    const timeout=setTimeout(()=>finish(Error('The market feed timed out.')),13000);
+    try{ws=new WebSocket(WS_URL);}catch{finish(Error('This browser could not open the market feed.'));return;}
+    ws.onopen=()=>ws.send(JSON.stringify({time:1,req_id:1}));
+    ws.onerror=()=>finish(Error('The market-data connection is unavailable.'));
+    ws.onclose=()=>finish(Error('The market-data connection closed before the response.'));
+    ws.onmessage=e=>{
+      try{
+        const msg=JSON.parse(e.data);
+        if(msg.error){finish(Error('The provider could not return XAUUSD data.'));return;}
+        if(msg.req_id===1 && msg.msg_type==='time'){
+          if(!numeric(msg.time)||!Number.isSafeInteger(Number(msg.time))||Number(msg.time)<1e9)throw Error('The provider clock is unavailable.');
+          asOf=Number(msg.time)*1000;at=performance.now();
+          cutoff=Math.floor((asOf-(history?86400000:0))/period)*period;
+          ws.send(JSON.stringify({ticks_history:INSTRUMENT,granularity:period/1000,style:'candles',count,end:String(cutoff/1000-1),adjust_start_time:1,req_id:2}));
+        }else if(msg.req_id===2&&msg.msg_type==='candles'&&asOf){
+          if(msg.echo_req?.ticks_history&&msg.echo_req.ticks_history!==INSTRUMENT)throw Error('The symbol in the response did not match XAUUSD.');
+          const bars=closedRows(msg.candles,period,cutoff);
+          if(!bars.length)throw Error('No completed XAUUSD candles were returned.');
+          finish(null,{bars,asOf,at,cutoff});
         }
-      } catch (err) { finish(err); }
+      }catch(err){finish(err);}
     };
   });
 }
 
-async function requestPaxgFallback(intervalStr, period, limit = 500) {
-  const url = `https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${intervalStr}&limit=${limit}`;
-  const res = await fetch(url);
-  if (!res.ok) throw Error('HTTPS candle fallback unavailable.');
-  const raw = await res.json();
-  const now = Date.now();
-  const cutoff = Math.floor(now / period) * period;
-  const rows = raw.map(k => ({ epoch: Math.floor(k[0] / 1000), open: k[1], high: k[2], low: k[3], close: k[4] }));
-  const bars = closedRows(rows, period, cutoff);
-  if (!bars.length) throw Error('No fallback bars returned.');
-  return { bars, asOf: now, cutoff, provider: 'PAXG/USDT Gold Proxy' };
-}
-
-async function fetchSpotFallback() {
-  try {
-    const res = await fetch('https://api.gold-api.com/price/XAU');
-    if (!res.ok) throw Error('Spot API failed');
-    const data = await res.json();
-    if (!numeric(data.price)) throw Error('Invalid price');
-    $('connSpot').textContent = 'Connected · ' + utcSec(Date.now());
-    if (!tickStreamAlive || Date.now() - market.spot.time > 15000) {
-      updateSpotPrice(Number(data.price), Date.now(), 'Gold API HTTPS');
-    }
-  } catch {
-    $('connSpot').textContent = 'Unavailable';
-  }
-}
-
-/* Live Tick Stream (Deriv WebSocket) */
-let tickWS = null, tickStreamAlive = false, tickReconnectTimer = null, tickEp = 0;
-function startTickStream() {
-  if (tickWS && tickWS.readyState <= 1) return;
-  $('connStream').textContent = 'Connecting…';
-  try { tickWS = new WebSocket(WS_ENDPOINTS[tickEp % WS_ENDPOINTS.length]); }
-  catch { $('connStream').textContent = 'Blocked'; return; }
-
-  tickWS.onopen = () => {
-    tickWS.send(JSON.stringify({ ticks: INSTRUMENT, subscribe: 1 }));
-    $('connStream').textContent = 'Streaming live';
-    tickStreamAlive = true;
-  };
-  tickWS.onmessage = e => {
-    try {
-      const msg = JSON.parse(e.data);
-      if (msg.msg_type === 'tick' && msg.tick && numeric(msg.tick.quote)) {
-        tickStreamAlive = true;
-        $('connStream').textContent = 'Live · ' + utcSec(Number(msg.tick.epoch) * 1000);
-        updateSpotPrice(Number(msg.tick.quote), Number(msg.tick.epoch) * 1000, 'Deriv Live Tick');
-      }
-    } catch {}
-  };
-  tickWS.onerror = () => { tickStreamAlive = false; };
-  tickWS.onclose = () => {
-    tickStreamAlive = false;
-    $('connStream').textContent = 'Reconnecting…';
-    tickEp++;
-    clearTimeout(tickReconnectTimer);
-    tickReconnectTimer = setTimeout(startTickStream, 4000);
-  };
-}
-
-function updateSpotPrice(price, time, source) {
-  market.spot.prev = market.spot.price;
-  market.spot.price = price;
-  market.spot.time = time;
-  market.spot.source = source;
-
-  $('spotValue').textContent = fmt(price);
-  $('spotValue').className = 'metvalue mono ' + (market.spot.prev === null ? '' : price > market.spot.prev ? 'up' : price < market.spot.prev ? 'down' : '');
-  $('spotAge').textContent = utcSec(time) + ' UTC';
-  $('spotMeta').textContent = source;
-
-  // Evaluate live stop/collect profit & real-time signal on every tick
-  if (market[1].bars.length) {
-    evaluateActiveTrade(price);
-    recomputeAndRenderSignal(false);
-    drawPlot();
-  }
-}
-
-/* ==================== REAL-TIME SCALPING SIGNAL ENGINE ==================== */
-function analyzeTimeframe(tfKey) {
-  const bars = market[tfKey].bars;
-  const metrics = market[tfKey].metrics;
-  if (bars.length < 25) return { ready: false, score: 0, bias: 'WAIT', label: 'Warmup', rsi: null, atr: null, fast: null, slow: null, choppy: true };
-  const b = last(bars), prev = bars[bars.length - 2];
-  const m = last(metrics), pm = metrics[metrics.length - 2];
-  if (!m || m.fast === null || m.slow === null || m.rsi === null || m.atr === null) {
-    return { ready: false, score: 0, bias: 'WAIT', label: 'Warmup', rsi: m?.rsi ?? null, atr: m?.atr ?? null, fast: m?.fast ?? null, slow: m?.slow ?? null, choppy: true };
-  }
-
-  let score = 0; // Range roughly -1 to +1
-  const emaDiff = m.fast - m.slow;
-  const atr = Math.max(m.atr, 0.05);
-  const emaSepRatio = Math.abs(emaDiff) / atr;
-  const fastSlope = pm && pm.fast !== null ? (m.fast - pm.fast) / atr : 0;
-
-  // 1. EMA Trend direction (40%)
-  if (emaDiff > 0) score += clamp(0.22 + emaSepRatio * 0.22, 0.15, 0.42);
-  else if (emaDiff < 0) score -= clamp(0.22 + emaSepRatio * 0.22, 0.15, 0.42);
-
-  // 2. Price vs EMA 9 + Slope (25%)
-  if (b.c > m.fast && fastSlope > 0) score += 0.24;
-  else if (b.c < m.fast && fastSlope < 0) score -= 0.24;
-  else if (b.c > m.fast) score += 0.08;
-  else if (b.c < m.fast) score -= 0.08;
-
-  // 3. RSI Momentum Zone (20%)
-  if (m.rsi >= 53 && m.rsi <= 72) score += 0.20;
-  else if (m.rsi <= 47 && m.rsi >= 28) score -= 0.20;
-  else if (m.rsi > 72) score += 0.05; // Overbought caution
-  else if (m.rsi < 28) score -= 0.05; // Oversold caution
-
-  // 4. Candle body & close strength (15%)
-  const rng = Math.max(b.h - b.l, 0.01);
-  const bodyRatio = (b.c - b.o) / rng;
-  score += clamp(bodyRatio * 0.18, -0.16, 0.16);
-
-  score = clamp(score, -1, 1);
-  const choppy = emaSepRatio < 0.08 && Math.abs(score) < 0.28;
-  const bias = choppy ? 'FLAT' : score >= 0.22 ? 'BULL' : score <= -0.22 ? 'BEAR' : 'FLAT';
-
-  return {
-    ready: true, score, bias, choppy,
-    label: bias === 'BULL' ? 'Bullish' : bias === 'BEAR' ? 'Bearish' : 'Choppy / Flat',
-    rsi: m.rsi, atr, fast: m.fast, slow: m.slow, close: b.c, high: b.h, low: b.l,
-    emaSepRatio, prevClose: prev.c
-  };
-}
-
-/* Live k-NN Empirical Probability Helper (uses recent M1 & M5 closed bars) */
-function livePatternProbability(bars, period) {
-  if (bars.length < 45) return null;
-  const feat = [];
-  for (let i = 5; i < bars.length - 1; i++) {
-    const w = studyWindow(bars, i, period);
-    if (!w) continue;
-    if (bars[i + 1].t !== bars[i].t + period) continue;
-    feat.push({ x: w.x, y: (bars[i + 1].c - bars[i].c) / w.scale });
-  }
-  const cur = studyWindow(bars, bars.length - 1, period);
-  if (!cur || feat.length < 25) return null;
-  const matches = feat.map(r => {
-    let d = 0; for (let j = 0; j < cur.x.length; j++) d += (cur.x[j] - r.x[j]) ** 2;
-    return { y: r.y, d };
-  }).sort((a, b) => a.d - b.d).slice(0, 15);
-  const up = matches.filter(m => m.y > 0).length;
-  const down = matches.filter(m => m.y < 0).length;
-  return { up, down, score: (up - down) / 15 }; // -1 to +1
-}
-
-/* Calculate Entry, Stop Loss, TP1 (Collect Profit), TP2 (Extended Profit) */
-function calculateRiskLevels(side, entryPrice, m1, m5) {
-  const multMap = { tight: 1.0, balanced: 1.35, wide: 1.8 };
-  const slMult = multMap[state.riskProfile] || 1.35;
-
-  // Blend M1 & M5 volatility for practical gold scalping stops
-  const baseAtr = m5.ready && m1.ready ? (m1.atr * 0.55 + m5.atr * 0.45) : (m1.atr || m5.atr || 1.5);
-  const recentM1 = market[1].bars.slice(-6);
-  const swingLow = recentM1.length ? Math.min(...recentM1.map(b => b.l)) : entryPrice - baseAtr;
-  const swingHigh = recentM1.length ? Math.max(...recentM1.map(b => b.h)) : entryPrice + baseAtr;
-
-  const minRisk = Math.max(0.45, baseAtr * 0.85);
-  const maxRisk = Math.max(1.20, baseAtr * 2.35);
-  const atrRisk = baseAtr * slMult;
-
-  const dir = side === 'BUY' ? 1 : -1;
-  let slRaw = side === 'BUY'
-    ? Math.min(entryPrice - atrRisk, swingLow - baseAtr * 0.15)
-    : Math.max(entryPrice + atrRisk, swingHigh + baseAtr * 0.15);
-
-  const riskDist = clamp(Math.abs(entryPrice - slRaw), minRisk, maxRisk);
-  const sl = moneyRound(entryPrice - dir * riskDist);
-  const tp1 = moneyRound(entryPrice + dir * riskDist * 1.5); // Collect Profit (1.5R)
-  const tp2 = moneyRound(entryPrice + dir * riskDist * 2.5); // Extended Profit (2.5R)
-
-  return {
-    entry: moneyRound(entryPrice),
-    sl, tp1, tp2,
-    risk: moneyRound(riskDist),
-    tp1Dist: moneyRound(riskDist * 1.5),
-    tp2Dist: moneyRound(riskDist * 2.5)
-  };
-}
-
-function computeRealtimeSignal() {
-  const m1 = analyzeTimeframe(1);
-  const m5 = analyzeTimeframe(5);
-  const m15 = analyzeTimeframe(15);
-
-  const latestM1 = last(market[1].bars);
-  const entryRef = market.spot.price ?? latestM1?.c ?? null;
-  const feedAgeMs = latestM1 ? (Date.now() - (latestM1.t + MIN)) : Infinity;
-  const isStale = !latestM1 || feedAgeMs > 6 * MIN;
-
-  if (!m1.ready || !m5.ready || !entryRef) {
-    return {
-      action: 'WAIT', clarity: 'WARMUP', buyProb: 50, sellProb: 50,
-      nextBias: 'WAIT', nextProb: 50,
-      reason: 'Collecting continuous M1, M5, and M15 candles to calculate scalping probability.',
-      triggerText: 'Waiting for bars',
-      levels: null, m1, m5, m15, isStale
-    };
-  }
-
-  // Empirical pattern probability on M1 and M5
-  const pat1 = livePatternProbability(market[1].bars, MIN);
-  const pat5 = livePatternProbability(market[5].bars, FIVE);
-  const patScore = pat1 && pat5 ? (pat1.score * 0.5 + pat5.score * 0.5) : (pat1?.score ?? pat5?.score ?? 0);
-
-  // Live tick micro-pressure vs last M1 close
-  const tickDelta = market.spot.price ? clamp((market.spot.price - latestM1.c) / Math.max(m1.atr, 0.2), -1, 1) : 0;
-
-  // Weighted composite score (-1 to +1)
-  const m15Score = m15.ready ? m15.score : 0;
-  const composite = (
-    m1.score * 0.32 +
-    m5.score * 0.30 +
-    m15Score * 0.18 +
-    patScore * 0.14 +
-    tickDelta * 0.06
-  );
-
-  // Convert composite (-1..+1) smoothly into Buy / Sell probability (5%..95%)
-  const buyProb = Math.round(clamp(50 + composite * 44, 5, 95));
-  const sellProb = 100 - buyProb;
-  const nextBias = buyProb >= 50 ? 'BUY' : 'SELL';
-  const nextProb = Math.max(buyProb, sellProb);
-
-  // Market Clarity & WAIT Guardrails
-  const waitReasons = [];
-  if (isStale) waitReasons.push('Market feed is paused or weekend-closed (>6m since last M1 close)');
-  if (m1.choppy && m5.choppy) waitReasons.push('M1 and M5 EMAs are flat/choppy — no directional edge');
-  if ((m1.bias === 'BULL' && m5.bias === 'BEAR') || (m1.bias === 'BEAR' && m5.bias === 'BULL')) {
-    waitReasons.push(`M1 (${m1.label}) conflicts with M5 (${m5.label})`);
-  }
-  if (nextBias === 'BUY' && m1.rsi > 75) waitReasons.push(`M1 RSI overbought (${m1.rsi.toFixed(1)}) — avoid chasing`);
-  if (nextBias === 'SELL' && m1.rsi < 25) waitReasons.push(`M1 RSI oversold (${m1.rsi.toFixed(1)}) — avoid chasing`);
-  if (m15.ready) {
-    if (nextBias === 'BUY' && m15.bias === 'BEAR' && nextProb < 70) {
-      waitReasons.push('Counter-trend against bearish M15 (needs ≥70% M1/M5 confluence)');
-    }
-    if (nextBias === 'SELL' && m15.bias === 'BULL' && nextProb < 70) {
-      waitReasons.push('Counter-trend against bullish M15 (needs ≥70% M1/M5 confluence)');
-    }
-  }
-  if (nextProb < 62) {
-    waitReasons.push(`Probability (${nextProb}%) below 62% scalping entry threshold`);
-  }
-
-  let action = 'WAIT', clarity = 'UNCLEAR', reason = '';
-  if (waitReasons.length === 0) {
-    action = nextBias;
-    clarity = nextProb >= 72 ? 'HIGH CLARITY' : 'CLEAR';
-    const m15Note = m15.ready ? `M15 ${m15.label.toLowerCase()}` : 'M15 warming up';
-    reason = `${action} scalp confirmed (${nextProb}% probability): M1 & M5 aligned with ${m15Note}. Enter near ${fmt(entryRef)}, protect with SL, and collect profit at TP1.`;
-  } else {
-    action = 'WAIT';
-    clarity = waitReasons.length === 1 && nextProb >= 58 ? 'MIXED · WAIT' : 'UNCLEAR · WAIT';
-    reason = `Market not clear — WAIT. ${waitReasons[0]}.`;
-  }
-
-  // Trigger hint for when WAIT turns into BUY/SELL
-  const recent3 = market[1].bars.slice(-3);
-  const breakHigh = Math.max(...recent3.map(b => b.h));
-  const breakLow = Math.min(...recent3.map(b => b.l));
-  const triggerText = action === 'WAIT'
-    ? (nextBias === 'BUY' ? `Watch > ${fmt(breakHigh)}` : `Watch < ${fmt(breakLow)}`)
-    : `Active ${action} @ ${fmt(entryRef)}`;
-
-  // Always compute projected levels for the current action (or preview for nextBias)
-  const levelSide = action === 'WAIT' ? nextBias : action;
-  const levels = calculateRiskLevels(levelSide, entryRef, m1, m5);
-
-  return {
-    action, clarity, buyProb, sellProb, nextBias, nextProb,
-    reason, triggerText, levels, levelSide, m1, m5, m15, isStale,
-    sigKey: `${latestM1.t}-${action}-${Math.floor(nextProb / 5)}`
-  };
-}
-
-function recomputeAndRenderSignal(allowAlert = false) {
-  const sig = computeRealtimeSignal();
-  currentSignal = sig;
-
-  // Header badge & hero box
-  const hero = $('signalHeroBox');
-  const word = $('direction');
-  const iconWrap = $('signalIcon');
-  const tag = $('clarityTag');
-
-  const cls = sig.action === 'BUY' ? 'buy' : sig.action === 'SELL' ? 'sell' : 'wait';
-  hero.className = 'signalHeroBox ' + cls;
-  tag.className = 'tag ' + cls;
-  tag.textContent = sig.clarity;
-  word.className = 'signalword ' + (cls === 'buy' ? 'up' : cls === 'sell' ? 'down' : 'gold');
-  word.textContent = sig.action === 'WAIT' ? 'WAIT' : `${sig.action} NOW`;
-  iconWrap.className = 'sigicon ' + (cls === 'buy' ? 'up' : cls === 'sell' ? 'down' : 'gold');
-  iconWrap.innerHTML = icon(cls);
-  $('signalSubcap').textContent = sig.action === 'WAIT'
-    ? 'NO CLEAR ENTRY · PROTECT CAPITAL'
-    : `REAL-TIME SCALP ENTRY · ${sig.nextProb}% CONFIDENCE`;
-  $('summary').textContent = sig.reason;
-
-  // Probability bar
-  $('buyProbTxt').textContent = sig.buyProb + '%';
-  $('sellProbTxt').textContent = sig.sellProb + '%';
-  $('buyProbBar').style.width = sig.buyProb + '%';
-  $('sellProbBar').style.width = sig.sellProb + '%';
-  $('nextMoveTxt').innerHTML = sig.nextBias === 'WAIT'
-    ? 'Evaluating…'
-    : `<span class="${sig.nextBias === 'BUY' ? 'up' : 'down'}">${sig.nextBias} (${sig.nextProb}%)</span>`;
-  $('triggerHint').textContent = sig.triggerText;
-
-  // Levels (show locked activeTrade levels if tracking, otherwise live computed levels)
-  const lv = activeTrade ? {
-    entry: activeTrade.entry, sl: activeTrade.sl, tp1: activeTrade.tp1, tp2: activeTrade.tp2,
-    risk: Math.abs(activeTrade.entry - activeTrade.sl),
-    tp1Dist: Math.abs(activeTrade.tp1 - activeTrade.entry),
-    tp2Dist: Math.abs(activeTrade.tp2 - activeTrade.entry)
-  } : sig.levels;
-  const lvSide = activeTrade ? activeTrade.side : sig.levelSide;
-  const isPreview = !activeTrade && sig.action === 'WAIT';
-
-  if (lv) {
-    $('entrySideTag').textContent = activeTrade ? `LOCKED ${lvSide}` : (isPreview ? `NEXT ${lvSide}` : lvSide);
-    $('entrySideTag').className = lvSide === 'BUY' ? 'up' : 'down';
-    $('lvlEntry').textContent = fmt(lv.entry);
-    $('lvlEntrySub').textContent = activeTrade ? 'Active tracked entry' : (isPreview ? 'Projected if market clears' : 'Live execution level');
-    $('lvlSl').textContent = fmt(lv.sl);
-    $('lvlSlPips').textContent = '−' + (lv.risk / pipSize()).toFixed(1) + ' pips';
-    $('lvlSlSub').textContent = activeTrade?.movedBE ? 'Protected at Break-Even' : `Risk $${fmt(lv.risk)}/oz`;
-    $('lvlTp1').textContent = fmt(lv.tp1);
-    $('lvlTp1Pips').textContent = '+' + (lv.tp1Dist / pipSize()).toFixed(1) + ' pips';
-    $('lvlTp1Sub').textContent = `1.5R Collect Profit (+$${fmt(lv.tp1Dist)})`;
-    $('lvlTp2').textContent = fmt(lv.tp2);
-    $('lvlTp2Pips').textContent = '+' + (lv.tp2Dist / pipSize()).toFixed(1) + ' pips';
-    $('lvlTp2Sub').textContent = `2.5R Runner (+$${fmt(lv.tp2Dist)})`;
-  } else {
-    ['lvlEntry', 'lvlSl', 'lvlTp1', 'lvlTp2'].forEach(id => { $(id).textContent = '—'; });
-  }
-
-  // M1 / M5 / M15 Confluence Chips
-  $('mtfRow').innerHTML = [
-    ['M1', sig.m1], ['M5', sig.m5], ['M15', sig.m15]
-  ].map(([name, info]) => {
-    const c = info.bias === 'BULL' ? 'up' : info.bias === 'BEAR' ? 'down' : 'muted';
-    const rsiStr = info.rsi !== null ? 'RSI ' + info.rsi.toFixed(0) : 'RSI —';
-    const atrStr = info.atr !== null ? 'ATR ' + info.atr.toFixed(2) : 'Warmup';
-    return `<div class="mtfChip"><div class="mhead"><span>${name}</span><span>${atrStr}</span></div><strong class="${c}">${info.label}</strong><small>${rsiStr}</small></div>`;
-  }).join('');
-
-  // Enable Track button when BUY/SELL is active
-  const takeBtn = $('btnTakeSignal');
-  takeBtn.disabled = !!activeTrade || sig.action === 'WAIT';
-  takeBtn.textContent = sig.action === 'WAIT' ? 'Waiting for Clear Signal' : `Enter & Track ${sig.action}`;
-
-  // Fire alert & optional auto-track when a fresh BUY/SELL signal triggers
-  if (allowAlert && sig.action !== 'WAIT' && sig.sigKey !== lastAlertedSignalKey) {
-    lastAlertedSignalKey = sig.sigKey;
-    logSignalEvent(sig.action, sig.levels.entry, `SL ${fmt(sig.levels.sl)} · TP1 ${fmt(sig.levels.tp1)} (${sig.nextProb}%)`);
-    notifyUser(
-      `XAUUSD ${sig.action} Signal (${sig.nextProb}%)`,
-      `Entry ${fmt(sig.levels.entry)} · SL ${fmt(sig.levels.sl)} · Collect TP1 ${fmt(sig.levels.tp1)}`,
-      sig.action === 'BUY' ? 'buy' : 'sell'
-    );
-    if (state.autoTrack && !activeTrade) {
-      startActiveTrade(sig);
-    }
-  }
-  renderActiveTrade();
-}
-
-/* ==================== ACTIVE TRADE: STOP LOSS & COLLECT PROFIT MANAGER ==================== */
-function startActiveTrade(sig = currentSignal) {
-  if (!sig || sig.action === 'WAIT' || !sig.levels) return;
-  activeTrade = {
-    id: Date.now(),
-    side: sig.action,
-    entry: sig.levels.entry,
-    sl: sig.levels.sl,
-    tp1: sig.levels.tp1,
-    tp2: sig.levels.tp2,
-    risk: sig.levels.risk,
-    prob: sig.nextProb,
-    movedBE: false,
-    tp1Notified: false,
-    openedAt: Date.now()
-  };
-  logSignalEvent(activeTrade.side, activeTrade.entry, `TRACKING · SL ${fmt(activeTrade.sl)} · TP1 ${fmt(activeTrade.tp1)}`);
-  showToast(`Tracking ${activeTrade.side} @ ${fmt(activeTrade.entry)} · SL ${fmt(activeTrade.sl)} · TP1 ${fmt(activeTrade.tp1)}`);
-  renderActiveTrade();
-  drawPlot();
-}
-
-function closeActiveTrade(reasonLabel, exitPrice) {
-  if (!activeTrade) return;
-  const dir = activeTrade.side === 'BUY' ? 1 : -1;
-  const pnlUsd = moneyRound((exitPrice - activeTrade.entry) * dir);
-  const pips = pipText(pnlUsd);
-  const trade = {
-    id: activeTrade.id,
-    source: 'Live Signal',
-    period: 'M1/M5',
-    side: activeTrade.side,
-    entry: activeTrade.entry,
-    exit: moneyRound(exitPrice),
-    qty: 1,
-    pnl: pnlUsd,
-    note: reasonLabel,
-    closedAt: Date.now()
-  };
-  state.journal.unshift(trade);
-  if (state.journal.length > 200) state.journal.length = 200;
-  saveState();
-
-  logSignalEvent(reasonLabel, exitPrice, `${activeTrade.side} closed · ${signed(pnlUsd)} (${pips})`);
-  const tone = pnlUsd >= 0 ? 'tp' : 'sl';
-  notifyUser(`XAUUSD ${reasonLabel}`, `${activeTrade.side} exited @ ${fmt(exitPrice)} (${signed(pnlUsd)} / ${pips})`, tone);
-
-  activeTrade = null;
-  renderActiveTrade();
-  renderJournal();
-  recomputeAndRenderSignal(false);
-  drawPlot();
-}
-
-function moveStopToBreakEven() {
-  if (!activeTrade) return;
-  activeTrade.sl = activeTrade.entry;
-  activeTrade.movedBE = true;
-  showToast(`Stop Loss moved to Break-Even (${fmt(activeTrade.entry)})`);
-  logSignalEvent('SL → BE', activeTrade.entry, 'Stop Loss locked at entry');
-  renderActiveTrade();
-  recomputeAndRenderSignal(false);
-  drawPlot();
-}
-
-function evaluateActiveTrade(spotPrice) {
-  if (!activeTrade || !Number.isFinite(spotPrice)) return;
-  const isBuy = activeTrade.side === 'BUY';
-
-  // Check Stop Loss hit
-  if ((isBuy && spotPrice <= activeTrade.sl) || (!isBuy && spotPrice >= activeTrade.sl)) {
-    closeActiveTrade(activeTrade.movedBE ? 'BREAK-EVEN EXIT' : 'STOP LOSS HIT', activeTrade.sl);
-    return;
-  }
-  // Check TP2 (Extended Profit) auto-collect
-  if ((isBuy && spotPrice >= activeTrade.tp2) || (!isBuy && spotPrice <= activeTrade.tp2)) {
-    closeActiveTrade('COLLECT PROFIT (TP2)', activeTrade.tp2);
-    return;
-  }
-  // Check TP1 (Primary Collect Profit) — alert + auto move SL to Break-Even
-  if (!activeTrade.tp1Notified && ((isBuy && spotPrice >= activeTrade.tp1) || (!isBuy && spotPrice <= activeTrade.tp1))) {
-    activeTrade.tp1Notified = true;
-    activeTrade.sl = activeTrade.entry;
-    activeTrade.movedBE = true;
-    logSignalEvent('TP1 REACHED', spotPrice, 'Collect Profit zone hit · SL moved to BE');
-    notifyUser('COLLECT PROFIT (TP1 Hit!)', `Price reached ${fmt(spotPrice)}. Take profit now or let runner ride to TP2 (${fmt(activeTrade.tp2)}). SL moved to Break-Even.`, 'tp');
-  }
-  renderActiveTrade();
-}
-
-function renderActiveTrade() {
-  const spot = market.spot.price ?? last(market[1].bars)?.c;
-  const takeBtn = $('btnTakeSignal');
-  const tpBtn = $('btnCollectProfit');
-  const beBtn = $('btnMoveBE');
-  const slBtn = $('btnStopTrade');
-  const progWrap = $('trackerProgressWrap');
-
-  if (!activeTrade) {
-    $('trackerTitle').textContent = 'Live Signal Tracker · Idle';
-    $('trackerPnl').textContent = '—';
-    $('trackerPnl').className = 'mono muted';
-    $('trackerBody').textContent = 'Click "Enter & Track" when BUY or SELL appears to monitor Stop Loss & Collect Profit live on every tick.';
-    takeBtn.hidden = false;
-    tpBtn.hidden = beBtn.hidden = slBtn.hidden = progWrap.hidden = true;
-    return;
-  }
-
-  const dir = activeTrade.side === 'BUY' ? 1 : -1;
-  const curPrice = spot ?? activeTrade.entry;
-  const pnl = moneyRound((curPrice - activeTrade.entry) * dir);
-  const pnlCls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'muted';
-
-  $('trackerTitle').innerHTML = `Active <span class="${activeTrade.side === 'BUY' ? 'up' : 'down'}">${activeTrade.side}</span> @ ${fmt(activeTrade.entry)}`;
-  $('trackerPnl').textContent = `${signed(pnl)} (${pipText(pnl)})`;
-  $('trackerPnl').className = 'mono ' + pnlCls;
-  $('trackerBody').textContent = activeTrade.tp1Notified
-    ? `TP1 reached! Stop moved to Break-Even (${fmt(activeTrade.sl)}). Collect profit now or hold for TP2 (${fmt(activeTrade.tp2)}).`
-    : `Live monitoring against SL ${fmt(activeTrade.sl)} and Collect Profit TP1 ${fmt(activeTrade.tp1)}.`;
-
-  // Progress bar from SL (0%) to TP1/TP2 (100%)
-  const target = activeTrade.tp1Notified ? activeTrade.tp2 : activeTrade.tp1;
-  const span = Math.abs(target - activeTrade.sl);
-  const pct = span > 0 ? clamp(((curPrice - activeTrade.sl) * dir) / span * 100, 0, 100) : 50;
-  progWrap.hidden = false;
-  $('trackerProgressFill').style.width = pct.toFixed(1) + '%';
-  $('trackerProgressFill').style.background = pnl >= 0 ? 'var(--up)' : 'var(--down)';
-  $('progSl').textContent = 'SL ' + fmt(activeTrade.sl);
-  $('progNow').textContent = 'Now ' + fmt(curPrice);
-  $('progTp').textContent = (activeTrade.tp1Notified ? 'TP2 ' : 'TP1 ') + fmt(target);
-
-  takeBtn.hidden = true;
-  tpBtn.hidden = slBtn.hidden = false;
-  beBtn.hidden = activeTrade.movedBE;
-}
-
-function logSignalEvent(badge, price, detail) {
-  state.signalHistory.unshift({ t: Date.now(), badge, price, detail });
-  if (state.signalHistory.length > 30) state.signalHistory.length = 30;
-  saveState();
-  renderSignalLog();
-}
-
-function renderSignalLog() {
-  const el = $('signalLog');
-  if (!state.signalHistory.length) {
-    el.innerHTML = '<div class="meta">Real-time BUY, SELL, Collect Profit, and Stop Loss events will appear here.</div>';
-    return;
-  }
-  el.innerHTML = state.signalHistory.slice(0, 8).map(item => {
-    const cls = item.badge.includes('BUY') || item.badge.includes('TP') || item.badge.includes('PROFIT') ? 'buy'
-      : item.badge.includes('SELL') || item.badge.includes('STOP') ? 'sell' : 'wait';
-    return `<div class="historyrow"><time>${utcSec(item.t)}</time><span class="pill ${cls}">${item.badge}</span><span class="mono">${fmt(item.price)}</span><span class="muted" style="margin-left:auto;font-size:.75rem">${item.detail}</span></div>`;
-  }).join('');
-}
-
-/* ==================== CHART CANVAS RENDERING ==================== */
-let tf = 1, windowSize = 72, hover = null, geometry = null;
-const overlays = { fast: true, slow: true, levels: true };
-
-function candleFields(bar, active) {
-  $('ohlc').innerHTML = (active ? '<span>' + utcClock(bar.t) + ' UTC</span>' : '') +
-    [['O', bar.o], ['H', bar.h], ['L', bar.l], ['C', bar.c]]
-      .map(([l, v]) => `<span><b>${l}</b>${fmt(v)}</span>`).join('');
-}
-
-function drawPlot() {
-  const canvas = $('chart');
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width < 10 || rect.height < 10) return;
-  const w = Math.round(rect.width), h = Math.round(rect.height);
-  const dpr = Math.min(devicePixelRatio || 1, 3);
-  const ctx = canvas.getContext('2d');
-  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-  }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-
-  const bars = market[tf].bars.slice(-windowSize);
-  const read = market[tf].metrics.slice(-windowSize);
-  if (!bars.length) {
-    geometry = null;
-    $('ohlc').textContent = 'No confirmed M' + tf + ' candles yet';
-    return;
-  }
-
-  const left = 4, right = w > 480 ? 84 : 70, top = 14, bottom = 26;
-  const cw = w - left - right, ch = h - top - bottom;
-  const step = cw / bars.length, x = i => left + (i + 0.5) * step;
-
-  const lv = activeTrade ? activeTrade : (currentSignal?.action !== 'WAIT' ? currentSignal?.levels : null);
-  const extraVals = [];
-  if (overlays.levels && lv) extraVals.push(lv.entry, lv.sl, lv.tp1);
-  if (market.spot.price) extraVals.push(market.spot.price);
-
-  const values = bars.flatMap((b, i) => [
-    b.l, b.h,
-    ...(overlays.fast && read[i]?.fast !== null ? [read[i].fast] : []),
-    ...(overlays.slow && read[i]?.slow !== null ? [read[i].slow] : [])
-  ]).concat(extraVals);
-
-  let low = Math.min(...values), high = Math.max(...values);
-  const margin = Math.max(0.05, (high - low) * 0.1);
-  low -= margin; high += margin;
-  const y = v => top + (high - v) / (high - low) * ch;
-  geometry = { left, step, count: bars.length };
-
-  ctx.font = '11px ui-monospace, Consolas, monospace';
-  ctx.textBaseline = 'middle';
-
-  // Horizontal price grid
-  const rough = (high - low) / 5;
-  const base = 10 ** Math.floor(Math.log10(Math.max(rough, 1e-6)));
-  const tick = ([1, 2, 2.5, 5, 10].find(n => n * base >= rough) || 10) * base;
-  for (let v = Math.ceil(low / tick) * tick, j = 0; v <= high && j < 12; v += tick, j++) {
-    const py = Math.round(y(v)) + 0.5;
-    ctx.strokeStyle = '#262b33'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(w - right, py); ctx.stroke();
-    ctx.fillStyle = '#9aa3b0'; ctx.fillText(fmt(v), w - right + 8, py);
-  }
-
-  // Vertical time grid
-  const stride = Math.max(1, Math.ceil(74 / step));
-  for (let i = 1; i < bars.length; i++) {
-    const gap = bars[i].t - bars[i - 1].t !== tf * MIN;
-    if (i % stride !== 0 && !gap) continue;
-    const px = x(i);
-    ctx.strokeStyle = gap ? '#89754a' : '#222730';
-    ctx.setLineDash(gap ? [3, 4] : []);
-    ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, top + ch); ctx.stroke();
-    ctx.setLineDash([]);
-    if (i % stride === 0 && px > 22 && px < cw - 18) {
-      ctx.fillStyle = '#9aa3b0'; ctx.textAlign = 'center';
-      ctx.fillText(utcClock(bars[i].t), px, h - 11);
-      ctx.textAlign = 'left';
-    }
-  }
-
-  // Candlesticks & EMAs
-  ctx.save();
-  ctx.beginPath(); ctx.rect(left, top, cw, ch); ctx.clip();
-  bars.forEach((b, i) => {
-    const px = x(i), bw = Math.max(1.5, Math.min(11, step * 0.66));
-    const color = b.c >= b.o ? '#6bd8b3' : '#ec9098';
-    ctx.strokeStyle = ctx.fillStyle = color; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(px, y(b.l)); ctx.lineTo(px, y(b.h)); ctx.stroke();
-    ctx.fillRect(px - bw / 2, Math.min(y(b.o), y(b.c)), bw, Math.max(1.25, Math.abs(y(b.o) - y(b.c))));
-  });
-  for (const [key, color] of [['slow', '#92a3d4'], ['fast', '#eaca82']]) {
-    if (!overlays[key]) continue;
-    ctx.beginPath(); let begun = false;
-    read.forEach((m, i) => {
-      if (!m || m[key] === null) { begun = false; return; }
-      if (begun) ctx.lineTo(x(i), y(m[key])); else ctx.moveTo(x(i), y(m[key]));
-      begun = true;
-    });
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
-  }
-
-  // Entry / SL / TP1 / TP2 Lines
-  if (overlays.levels && lv) {
-    const drawLv = (price, color, label, dash) => {
-      const py = y(price);
-      if (py < top || py > top + ch) return;
-      ctx.strokeStyle = color; ctx.lineWidth = 1.25; ctx.setLineDash(dash);
-      ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(w - right, py); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = color;
-      ctx.fillText(`${label} ${fmt(price)}`, left + 6, py - 7);
-    };
-    drawLv(lv.entry, '#eaca82', 'ENTRY', [4, 3]);
-    drawLv(lv.sl, '#f39098', 'SL', [2, 2]);
-    drawLv(lv.tp1, '#67d6b2', 'TP1', [6, 3]);
-    if (lv.tp2) drawLv(lv.tp2, '#4db896', 'TP2', [2, 4]);
-  }
-  ctx.restore();
-
-  // Live Spot / Last Close price tag
-  const livePrice = market.spot.price ?? last(bars).c;
-  const end = last(bars), py = clamp(y(livePrice), top + 9, top + ch - 9);
-  const tint = livePrice >= end.o ? '#6bd8b3' : '#ed959c';
-  ctx.strokeStyle = tint + '99'; ctx.setLineDash([3, 4]);
-  ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(w - right + 3, py); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = tint; ctx.fillRect(w - right + 3, py - 9, right - 3, 18);
-  ctx.fillStyle = '#111615'; ctx.fillText(fmt(livePrice), w - right + 8, py);
-
-  // Hover crosshair
-  if (hover === null) { candleFields(end, false); return; }
-  hover = clamp(hover, 0, bars.length - 1);
-  const px = x(hover), picked = bars[hover];
-  ctx.strokeStyle = '#c7cbd4'; ctx.setLineDash([4, 3]);
-  ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, top + ch); ctx.stroke();
-  ctx.setLineDash([]);
-  candleFields(picked, true);
-}
-
-function installPlot() {
-  const canvas = $('chart');
-  const reset = () => { hover = null; drawPlot(); };
-  const point = e => {
-    if (!geometry) return;
-    hover = Math.floor((e.clientX - canvas.getBoundingClientRect().left - geometry.left) / geometry.step);
-    drawPlot();
-  };
-  canvas.addEventListener('pointerdown', point);
-  canvas.addEventListener('pointermove', point);
-  canvas.addEventListener('pointerleave', reset);
-  canvas.addEventListener('blur', reset);
-  canvas.addEventListener('keydown', e => {
-    if (!geometry) return;
-    if (e.key === 'Escape') return reset();
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    hover = (hover ?? geometry.count - 1) + (e.key === 'ArrowLeft' ? -1 : 1);
-    drawPlot();
-  });
-  for (const [id, key] of [['emaFast', 'fast'], ['emaSlow', 'slow'], ['showLevels', 'levels']]) {
-    $(id).onclick = () => {
-      overlays[key] = !overlays[key];
-      $(id).setAttribute('aria-pressed', String(overlays[key]));
-      drawPlot();
-    };
-  }
-  document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => {
-    windowSize = Number(b.dataset.count);
-    document.querySelectorAll('[data-count]').forEach(n => n.setAttribute('aria-pressed', String(n === b)));
-    reset();
-  });
-  document.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => {
-    tf = Number(b.dataset.tf); hover = null;
-    document.querySelectorAll('[data-tf]').forEach(n => n.setAttribute('aria-pressed', String(n === b)));
-    $('liveRef').href = `https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&interval=${tf}`;
-    paintMarket(false);
-  });
-  if ('ResizeObserver' in window) new ResizeObserver(drawPlot).observe(canvas);
-  else window.addEventListener('resize', drawPlot);
-}
-
-/* ==================== RENDER MARKET WORKSPACE ==================== */
-let lastCandleAlertStamp = { 1: 0, 5: 0, 15: 0 };
-
-function paintMarket(checkAlerts = true) {
-  const b1 = last(market[1].bars), m1 = last(market[1].metrics);
-  const b5 = last(market[5].bars);
-  const b15 = last(market[15].bars), m15 = last(market[15].metrics);
-
-  $('chartEmpty').hidden = market[tf].bars.length > 0;
-  if (!market[tf].bars.length) $('chartEmpty').textContent = `Waiting for completed M${tf} candles…`;
-  $('chartProvider').textContent = market.provider || 'XAUUSD Market Data';
-
-  if (b1) {
-    $('quote').textContent = fmt(b1.c);
-    $('quoteMeta').textContent = `Closed ${utcClock(b1.t + MIN)} UTC`;
-    const chg = m1?.change;
-    $('delta').textContent = signed(chg);
-    $('delta').className = 'metvalue mono ' + (chg > 0 ? 'up' : chg < 0 ? 'down' : '');
-    if (market.spot.price === null) {
-      $('spotValue').textContent = fmt(b1.c);
-      $('spotMeta').textContent = 'Using latest M1 close';
-    }
-  }
-  if (b5) {
-    $('range5').textContent = fmt(b5.h - b5.l);
-    $('rangeMeta').textContent = `M5 close ${utcClock(b5.t + FIVE)} UTC`;
-  }
-  if (b15) {
-    const bull15 = m15?.fast !== null && m15?.slow !== null ? (m15.fast >= m15.slow ? 'Bullish' : 'Bearish') : 'Warmup';
-    $('close15').textContent = fmt(b15.h - b15.l);
-    $('close15').className = 'metvalue mono ' + (bull15 === 'Bullish' ? 'up' : bull15 === 'Bearish' ? 'down' : '');
-    $('close15Meta').textContent = `${bull15} · Close ${utcClock(b15.t + FIFTEEN)} UTC`;
-  }
-
-  // Timeframe Comparison Table (M1, M5, M15)
-  $('comparison').innerHTML = [1, 5, 15].map(k => {
-    const bar = last(market[k].bars), met = last(market[k].metrics), info = analyzeTimeframe(k);
-    if (!bar) return `<tr><td>M${k}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="muted">Waiting</td></tr>`;
-    const emaTxt = met?.fast !== null && met?.slow !== null ? (met.fast >= met.slow ? '9 > 21' : '9 < 21') : '—';
-    const emaCls = met?.fast !== null && met?.slow !== null ? (met.fast >= met.slow ? 'up' : 'down') : 'muted';
-    const biasCls = info.bias === 'BULL' ? 'up' : info.bias === 'BEAR' ? 'down' : 'muted';
-    return `<tr>
-      <td class="mono"><strong>M${k}</strong></td>
-      <td class="mono">${utcClock(bar.t + k * MIN)}</td>
-      <td class="mono">${fmt(bar.c)}</td>
-      <td class="mono ${emaCls}">${emaTxt}</td>
-      <td class="mono">${met?.rsi !== null ? met.rsi.toFixed(1) : '—'}</td>
-      <td class="mono">${met?.atr !== null ? fmt(met.atr) : '—'}</td>
-      <td class="${biasCls}"><strong>${info.label}</strong></td>
-    </tr>`;
-  }).join('');
-
-  // Minute log
-  $('log').innerHTML = market[1].bars.length
-    ? market[1].bars.slice(-5).reverse().map(v => {
-        const diff = v.c - v.o;
-        return `<div class="historyrow"><time>${utcClock(v.t + MIN)} UTC</time><span class="mono">${fmt(v.c)}</span><span class="mono ${diff >= 0 ? 'up' : 'down'}" style="margin-left:auto">${signed(diff)}</span></div>`;
-      }).join('')
-    : '<div class="meta">Waiting for M1 closes…</div>';
-
-  // Candle-close alerts
-  const alertInt = Number(state.alerts.interval);
-  if (checkAlerts && alertInt && market[alertInt]?.bars.length) {
-    const latest = last(market[alertInt].bars);
-    if (lastCandleAlertStamp[alertInt] && latest.t > lastCandleAlertStamp[alertInt]) {
-      notifyUser(`XAUUSD M${alertInt} Candle Closed`, `Close ${fmt(latest.c)} · Signal: ${currentSignal?.action || 'WAIT'}`, 'info');
-    }
-    lastCandleAlertStamp[alertInt] = latest.t;
-  }
-
-  recomputeAndRenderSignal(checkAlerts);
-  renderGuideCards();
-  drawPlot();
-}
-
-/* ==================== LOAD LIVE MARKET DATA (M1, M5, M15) ==================== */
-let refreshing = false;
-async function loadLiveMarket(showFeedback = false) {
-  if (refreshing) return;
-  refreshing = true;
-  $('refresh').disabled = true;
-  $('feedBadge').textContent = 'Syncing';
-  $('feedBadge').className = 'feedbadge';
-
-  try {
-    // Request 1500 M1 candles (~25 hours => 1500 M1, ~300 M5, ~100 M15 bars!)
-    const [m1Res, m15Res] = await Promise.allSettled([
-      requestDerivCandles(MIN, 1500, false),
-      requestDerivCandles(FIFTEEN, 120, false)
-    ]);
-
-    if (m1Res.status === 'fulfilled') {
-      const m1Bars = m1Res.value.bars;
-      const m5Bars = groupBars(m1Bars, FIVE);
-      const agg15 = groupBars(m1Bars, FIFTEEN);
-      const m15Bars = (m15Res.status === 'fulfilled' && m15Res.value.bars.length >= agg15.length)
-        ? m15Res.value.bars : agg15;
-
-      market[1].bars = m1Bars; market[1].metrics = measurements(m1Bars, MIN);
-      market[5].bars = m5Bars; market[5].metrics = measurements(m5Bars, FIVE);
-      market[15].bars = m15Bars; market[15].metrics = measurements(m15Bars, FIFTEEN);
-      market.provider = m1Res.value.provider;
-      market.asOf = m1Res.value.asOf;
-      market.fetchedAt = Date.now();
-
-      $('connWS').textContent = `Connected · M1(${m1Bars.length}) M5(${m5Bars.length}) M15(${m15Bars.length})`;
-      $('connHTTPS').textContent = 'Standby';
-      $('feedBadge').textContent = 'Live';
-      $('feedBadge').className = 'feedbadge ok';
-      $('liveDot').classList.add('live');
-      $('feedText').textContent = `Live XAUUSD synced (${utcSec(Date.now())} UTC) · M1, M5 & M15 active.`;
-      $('backupFrame').hidden = true;
-    } else {
-      // Fallback to HTTPS PAXGUSDT gold proxy if Deriv WS is unreachable
-      $('connWS').textContent = 'Unavailable';
-      const [fb1, fb15] = await Promise.all([
-        requestPaxgFallback('1m', MIN, 500),
-        requestPaxgFallback('15m', FIFTEEN, 120)
-      ]);
-      market[1].bars = fb1.bars; market[1].metrics = measurements(fb1.bars, MIN);
-      market[5].bars = groupBars(fb1.bars, FIVE); market[5].metrics = measurements(market[5].bars, FIVE);
-      market[15].bars = fb15.bars; market[15].metrics = measurements(fb15.bars, FIFTEEN);
-      market.provider = fb1.provider;
-      market.asOf = fb1.asOf;
-      market.fetchedAt = Date.now();
-
-      $('connHTTPS').textContent = `Active · M1(${fb1.bars.length}) M15(${fb15.bars.length})`;
-      $('feedBadge').textContent = 'Fallback';
-      $('feedBadge').className = 'feedbadge ok';
-      $('feedText').textContent = `Deriv WS unavailable — using PAXG/USDT gold proxy (${utcSec(Date.now())} UTC).`;
-    }
-    paintMarket(true);
-    if (showFeedback) showToast('Market data refreshed (M1 / M5 / M15)');
-  } catch (err) {
-    $('feedBadge').textContent = 'Offline';
-    $('feedBadge').className = 'feedbadge err';
-    $('feedText').textContent = err.message || 'Could not load XAUUSD candle feed.';
-    $('chartEmpty').hidden = false;
-    $('chartEmpty').textContent = 'Live candle feed unreachable. Check connection or view TradingView tab.';
-  } finally {
-    refreshing = false;
-    $('refresh').disabled = false;
-  }
-}
-
-/* ==================== PAPER PRACTICE & LEARNING MODEL ==================== */
-const MODEL_CAP = 1200, MATCHES = 15, MIN_CASES = 30;
-function paperPeriod(p) { return (Number(p.interval) || 5) * MIN; }
-function studyDataset(p) {
-  if (!p.bars.length || !p.source) return null;
-  return p.source + '-' + paperPeriod(p);
-}
-function studyWindow(bars, i, period) {
-  if (i < 5) return null;
-  const b = bars[i], first = bars[i - 5];
-  if (b.t - first.t !== 5 * period) return null;
-  let scale = 0;
-  for (let j = i - 4; j <= i; j++) {
-    if (bars[j].t !== bars[j - 1].t + period) return null;
-    scale += bars[j].h - bars[j].l;
-  }
-  scale /= 5;
-  if (!Number.isFinite(scale) || scale <= 0) return null;
-  const clip = x => clamp(x, -3, 3);
-  const span = b.h - b.l;
-  return {
-    scale,
-    x: [clip((b.c - b.o) / scale), clip((b.c - bars[i - 3].c) / scale), span ? 2 * (b.c - b.l) / span - 1 : 0, clip(span / scale - 1)]
-  };
-}
-function studyQuantile(sorted, p) {
-  const n = (sorted.length - 1) * p, k = Math.floor(n), frac = n - k;
-  return sorted[k] + frac * (sorted[Math.min(k + 1, sorted.length - 1)] - sorted[k]);
-}
-function studyForecast(bars, period, rows) {
-  const b = last(bars), features = studyWindow(bars, bars.length - 1, period);
-  if (!b || !features) return { side: 0, reason: 'warmup', n: 0 };
-  const prior = rows.filter(r => r.t + period <= b.t);
-  if (prior.length < MIN_CASES) return { side: 0, reason: 'warmup', n: prior.length };
-  const ranked = prior.map(r => {
-    let dist = 0; for (let j = 0; j < features.x.length; j++) dist += (features.x[j] - r.x[j]) ** 2;
-    return { r, dist };
-  }).sort((a, b) => a.dist - b.dist || b.r.t - a.r.t).slice(0, MATCHES);
-  const moves = ranked.map(item => item.r.y * features.scale).sort((a, b) => a - b);
-  const up = moves.filter(v => v > 0).length, down = moves.filter(v => v < 0).length;
-  return {
-    side: up >= 10 ? 1 : down >= 10 ? -1 : 0, reason: 'matches', n: prior.length, up, down,
-    low: studyQuantile(moves, 0.25), mid: studyQuantile(moves, 0.5), high: studyQuantile(moves, 0.75)
-  };
-}
-function addStudyCase(book, bars, i, period, call) {
-  const b = bars[i], next = bars[i + 1];
-  if (!next || next.t !== b.t + period) return;
-  const f = studyWindow(bars, i, period); if (!f) return;
-  if (book.some(r => r.t === b.t)) return;
-  const delta = next.c - b.c;
-  book.push({ t: b.t, x: f.x, y: delta / f.scale, delta, call });
-}
-function startStudy(p, reset = false) {
-  const key = studyDataset(p); p.studyPending = null;
-  if (!key) return;
-  p.studyBooks ||= {};
-  if (reset) delete p.studyBooks[key];
-  const book = (p.studyBooks[key] ||= []);
-  const period = paperPeriod(p);
-  for (let i = 5; i < p.bars.length - 1; i++) addStudyCase(book, p.bars, i, period, null);
-  book.sort((a, b) => a.t - b.t);
-  if (book.length > MODEL_CAP) book.splice(0, book.length - MODEL_CAP);
-  freezeStudy(p);
-}
-function freezeStudy(p) {
-  const key = studyDataset(p); p.studyPending = null;
-  if (!key || !p.future.length) return;
-  const b = last(p.bars), book = p.studyBooks?.[key] || [];
-  p.studyPending = { key, t: b.t, close: b.c, ...studyForecast(p.bars, paperPeriod(p), book) };
-}
-function statCards(items) {
-  return items.map(([label, val, cls = '']) => `<div class="summarybox"><div class="smallcap">${label}</div><b class="${cls}">${val}</b></div>`).join('');
-}
-
-function paintPractice() {
-  const p = state.paper;
-  $('paperInterval').value = String(p.interval || 5);
-  $('pipUnit').value = String(pipSize());
-
-  const b = last(p.bars);
-  const equity = p.pos && b ? moneyRound(p.balance + (b.c - p.pos.entry) * (p.pos.side === 'BUY' ? 1 : -1) * p.pos.qty) : p.balance;
-  $('paperStats').innerHTML = statCards([
-    ['Virtual Balance', '$' + fmt(p.balance)],
-    ['Current Equity', '$' + fmt(equity), equity >= 10000 ? 'up' : 'down'],
-    ['Remaining Replay Bars', String(p.future.length)]
-  ]);
-  $('paperDate').textContent = b ? stamp(b.t) : 'NO SESSION';
-
-  // Study card
-  const key = studyDataset(p), panel = $('studyContent'), f = p.studyPending;
-  if (!key || !b) {
-    panel.innerHTML = '<p class="empty">Choose M1, M5, or M15 above and click "Load past market candles" to begin.</p>';
-  } else {
-    const title = !f ? 'Session complete' : f.side === 1 ? 'Paper BUY' : f.side === -1 ? 'Paper SELL' : 'WAIT';
-    const cls = !f ? 'muted' : f.side === 1 ? 'up' : f.side === -1 ? 'down' : 'gold';
-    const reason = !f ? 'End of historical session.' : f.reason === 'warmup'
-      ? `Warming up (${f.n}/${MIN_CASES} examples).`
-      : `${f.up} of 15 similar bars closed higher; ${f.down} closed lower.`;
-    const resHtml = f?.reason === 'matches'
-      ? `<div class="studyResults">${statCards([
-          ['Median Next Move', pipText(f.mid), f.mid >= 0 ? 'up' : 'down'],
-          ['Middle 50% Range', `${pipText(f.low)} to ${pipText(f.high)}`]
-        ])}</div>` : '';
-    panel.innerHTML = `<div class="studyIntro"><div><div class="smallcap">M${p.interval} Pattern Forecast</div><h3 class="${cls}">${title}</h3><p>${reason}</p></div><div class="studyRef"><span>Replay close</span><strong>${fmt(b.c)}</strong></div></div>${resHtml}`;
-  }
-
-  // Ticket
-  const ticket = $('paperTicket');
-  if (!b) {
-    ticket.innerHTML = '<p class="empty">Load historical candles first to place practice trades with Stop Loss and Collect Profit.</p>';
-    return;
-  }
-  const mArr = measurements(p.bars, paperPeriod(p));
-  const atr = last(mArr)?.atr || Math.max(1, b.h - b.l);
-  const defSlDist = moneyRound(atr * 1.3);
-  const defTpDist = moneyRound(atr * 2.0);
-
-  if (!p.pos) {
-    ticket.innerHTML = `
-      <div class="ticketinfo"><span>Price: <strong>${fmt(b.c)}</strong> (M${p.interval})</span><span>Suggested SL ±${fmt(defSlDist)} · TP ±${fmt(defTpDist)}</span></div>
-      <div class="ticketcontrols">
-        <label>Qty (oz) <input type="number" id="paperQty" value="5" min="1" max="100" step="1"></label>
-        <label>SL dist ($) <input type="number" id="paperSl" value="${defSlDist}" min="0.2" step="0.1"></label>
-        <label>TP dist ($) <input type="number" id="paperTp" value="${defTpDist}" min="0.2" step="0.1"></label>
-        <button class="btn buy" id="paperBuy">Paper BUY</button>
-        <button class="btn sell" id="paperSell">Paper SELL</button>
-      </div>`;
-    $('paperBuy').onclick = () => openPaperPos('BUY');
-    $('paperSell').onclick = () => openPaperPos('SELL');
-  } else {
-    const dir = p.pos.side === 'BUY' ? 1 : -1;
-    const pnl = moneyRound((b.c - p.pos.entry) * dir * p.pos.qty);
-    ticket.innerHTML = `
-      <div class="ticketinfo">
-        <span>Open <strong class="${dir > 0 ? 'up' : 'down'}">${p.pos.side} ${p.pos.qty} oz</strong> @ <strong>${fmt(p.pos.entry)}</strong></span>
-        <span>SL <strong class="down">${fmt(p.pos.sl)}</strong> · TP <strong class="up">${fmt(p.pos.tp)}</strong></span>
-        <span>Unrealized: <strong class="${pnl >= 0 ? 'up' : 'down'}">${signed(pnl)}</strong></span>
-      </div>
-      <div class="ticketcontrols">
-        <button class="btn primary" id="paperClose">Close / Collect Now @ ${fmt(b.c)}</button>
-      </div>`;
-    $('paperClose').onclick = () => closePaperPos(b.c, 'Manual Close');
-  }
-}
-
-function openPaperPos(side) {
-  const p = state.paper, b = last(p.bars);
-  if (!b) return;
-  const qty = Math.max(1, Number($('paperQty').value) || 5);
-  const slDist = Math.max(0.2, Number($('paperSl').value) || 1.5);
-  const tpDist = Math.max(0.2, Number($('paperTp').value) || 2.5);
-  const dir = side === 'BUY' ? 1 : -1;
-  p.pos = {
-    side, qty, entry: b.c,
-    sl: moneyRound(b.c - dir * slDist),
-    tp: moneyRound(b.c + dir * tpDist),
-    openedAt: b.t
-  };
-  saveState(); paintPractice();
-}
-
-function closePaperPos(exitPrice, note) {
-  const p = state.paper;
-  if (!p.pos) return;
-  const dir = p.pos.side === 'BUY' ? 1 : -1;
-  const pnl = moneyRound((exitPrice - p.pos.entry) * dir * p.pos.qty);
-  p.balance = moneyRound(p.balance + pnl);
-  state.journal.unshift({
-    id: Date.now(), source: 'Paper Practice', period: 'M' + p.interval,
-    side: p.pos.side, entry: p.pos.entry, exit: moneyRound(exitPrice),
-    qty: p.pos.qty, pnl, note, closedAt: Date.now()
-  });
-  p.pos = null;
-  saveState(); paintPractice(); renderJournal();
-}
-
-function stepPaperReplay() {
-  const p = state.paper;
-  if (!p.future.length) { $('practiceMsg').textContent = 'End of historical session reached.'; return; }
-  const prior = p.studyPending;
-  const nextBar = p.future.shift();
-  p.bars.push(nextBar);
-
-  // Check if paper SL or TP was triggered by next candle's high/low
-  if (p.pos) {
-    if (p.pos.side === 'BUY') {
-      if (nextBar.l <= p.pos.sl) closePaperPos(p.pos.sl, 'Stop Loss Hit');
-      else if (nextBar.h >= p.pos.tp) closePaperPos(p.pos.tp, 'Collect Profit Hit');
-    } else {
-      if (nextBar.h >= p.pos.sl) closePaperPos(p.pos.sl, 'Stop Loss Hit');
-      else if (nextBar.l <= p.pos.tp) closePaperPos(p.pos.tp, 'Collect Profit Hit');
-    }
-  }
-  const key = studyDataset(p);
-  if (key && p.studyBooks?.[key]) {
-    const i = p.bars.length - 2;
-    const call = prior && prior.t === p.bars[i].t ? prior.side : null;
-    addStudyCase(p.studyBooks[key], p.bars, i, paperPeriod(p), call);
-    freezeStudy(p);
-  }
-  saveState(); paintPractice();
-}
-
-/* ==================== CSV IMPORT ==================== */
+const $=id=>document.getElementById(id);
+const icons={
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
+  step:'<path d="m5 5 10 7-10 7zM19 5v14"/>',
+  wallet:'<path d="M4 7h14a2 2 0 0 1 2 2v10H5a2 2 0 0 1-2-2V7a2 2 0 0 1 1.5-2L16 2v5"/><path d="M20 11h-5v4h5"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/>',
+  bell:'<path d="M18 10a6 6 0 0 0-12 0c0 5-2 6-3 7h18c-1-1-3-2-3-7ZM10 20a2.4 2.4 0 0 0 4 0"/>',
+  bars:'<path d="m8 9 2-5h4l2 5zM2 17l2-5h5l2 5zM13 17l2-5h5l2 5z"/>',
+  pulse:'<path d="M2 12h5l3-7 4 14 3-7h5"/>',
+  book:'<path d="M3 5c4-1 6-1 9 1 3-2 6-2 9-1v14c-4-1-6-1-9 1-3-2-5-2-9-1zM12 6v14"/>',
+  activity:'<path d="M3 9a9 9 0 1 1 0 6M3 4v5h5M12 7v5l3 2"/>',
+  external:'<path d="M14 3h7v7M21 3 11 13M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+  database:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 4 16 4 16 0V5M4 12v6c0 4 16 4 16 0v-6"/>',
+  buy:'<path d="m3 16 6-6 4 4 8-9m-7 0h7v7"/>',sell:'<path d="m3 7 6 6 4-4 8 9m-7 0h7v-7"/>',
+  wait:'<path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.3" fill="var(--panel)"/><circle cx="15" cy="16" r="2.3" fill="var(--panel)"/>',
+  upload:'<path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/>',
+  x:'<path d="m6 6 12 12M18 6 6 18"/>'
+};
+const icon=k=>'<svg aria-hidden="true" focusable="false" class="ic" viewBox="0 0 24 24">'+icons[k]+'</svg>';
+document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon)});
 function csvFields(line) {
-  return (line.match(/("(?:[^"]|"")*"|[^",]*)(,|$)/g) || []).map(x => x.replace(/,$/, '').trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"'));
+  return (line.match(/("(?:[^"]|"")*"|[^",]*)(,|$)/g)||[]).map(x=>x.replace(/,$/,'').trim().replace(/^"(.*)"$/,'$1').replace(/""/g,'"'));
 }
-function readCSV(text, period) {
-  const lines = text.replace(/^\uFEFF/, '').trim().split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 146 || lines.length > 5001) throw Error('CSV must have 145–5,000 rows.');
-  const heads = csvFields(lines[0]).map(x => x.toLowerCase());
-  const cols = ['time', 'open', 'high', 'low', 'close'].map(k => heads.findIndex(h => h === k || (k === 'time' && ['timestamp', 'datetime', 'date'].includes(h))));
-  if (cols.includes(-1)) throw Error('Header must include time, open, high, low, close.');
-  const bars = lines.slice(1).map((line, i) => {
-    const c = csvFields(line);
-    const [time, ...f] = cols.map(idx => c[idx] ?? '');
-    let t = /^\d{10}$/.test(time) ? Number(time) * 1000 : /^\d{13}$/.test(time) ? Number(time) : Date.parse(time);
-    const [o, h, l, cl] = f.map(Number);
-    if (!Number.isFinite(t) || l <= 0 || h < Math.max(o, cl, l) || l > Math.min(o, cl)) throw Error('Invalid data at row ' + (i + 2));
-    return { t, o, h, l, c: cl };
-  }).sort((a, b) => a.t - b.t);
+function readCSV(text, period=FIVE, now=Date.now()) {
+  const lines=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(line=>line.trim());
+  if(lines.length<146 || lines.length>5001) throw Error('Choose a CSV containing 145–5,000 data rows.');
+  const heads=csvFields(lines[0]).map(x=>x.toLowerCase());
+  const cols=['time','open','high','low','close'].map(key=>heads.findIndex(h=>h===key || (key==='time'&&['timestamp','datetime','date'].includes(h))));
+  if(cols.includes(-1)) throw Error('The header needs time, open, high, low and close columns.');
+  const today=new Date(now);today.setUTCHours(0,0,0,0);
+  let adjacentPairs=0;
+  const bars=lines.slice(1).map((line,i)=>{
+    const cells=csvFields(line);
+    const [time,...fields]=cols.map(col=>cells[col]??'');
+    let t=NaN;
+    if(/^\d{10}$/.test(time)) t=Number(time)*1000;
+    else if(/^\d{13}$/.test(time)) t=Number(time);
+    else if(/(?:Z|[+-]\d\d:?\d\d)$/i.test(time)) t=Date.parse(time);
+    const [o,h,l,c]=fields.map(Number);
+    if(!Number.isFinite(t) || t<=0 || t%period!==0 || t+period>today.getTime())
+      throw Error('Row '+(i+2)+' needs a historical M'+(period/MIN)+' timestamp in UTC or with a timezone.');
+    if(!fields.every(v=>v.trim()!==''&&Number.isFinite(Number(v))) || l<=0 || h<Math.max(o,c,l) || l>Math.min(o,c) || !Number.isSafeInteger(Math.round(h*100)))
+      throw Error('Check the open, high, low and close prices at row '+(i+2)+'.');
+    return {t,o,h,l,c};
+  });
+  bars.sort((a,b)=>a.t-b.t);
+  for(let i=1;i<bars.length;i++){
+    const diff=bars[i].t-bars[i-1].t;
+    if(!diff) throw Error('The CSV contains duplicate candle times.');
+    if(diff===period) adjacentPairs++;
+  }
+  if(!adjacentPairs)throw Error('The file must contain adjacent M'+(period/MIN)+' candles. Check the selected replay period and chart interval before exporting.');
   return bars;
 }
 
-/* ==================== JOURNAL, GUIDE & TRADINGVIEW ==================== */
-function renderJournal() {
-  const rows = state.journal;
-  const totalPnl = moneyRound(rows.reduce((s, r) => s + r.pnl, 0));
-  const wins = rows.filter(r => r.pnl > 0).length;
-  const wr = rows.length ? Math.round((wins / rows.length) * 100) + '%' : '—';
-  $('journalStats').innerHTML = statCards([
-    ['Total Trades', String(rows.length)],
-    ['Win Rate', wr, wins >= rows.length / 2 ? 'up' : ''],
-    ['Net P/L', signed(totalPnl), totalPnl >= 0 ? 'up' : 'down']
-  ]);
-  if (!rows.length) {
-    $('journalBody').innerHTML = '<p class="empty">No closed trades yet. Track a real-time signal or complete a Paper Practice trade to log results here.</p>';
-    return;
+let tf=1,windowSize=72,hover=null,geometry=null;
+const overlays={fast:true,slow:true};
+function candleFields(bar,active){
+  $('ohlc').innerHTML=(active?'<span>'+utcClock(bar.t)+'</span>':'')+
+   [['O',bar.o],['H',bar.h],['L',bar.l],['C',bar.c]].map(([label,value])=>'<span><b>'+label+'</b>'+fmt(value)+'</span>').join('');
+}
+function drawPlot(){
+  const canvas=$('chart'),rect=canvas.getBoundingClientRect();
+  if(rect.width<10||rect.height<10)return;
+  const w=Math.round(rect.width),h=Math.round(rect.height),dpr=Math.min(devicePixelRatio||1,3),ctx=canvas.getContext('2d');
+  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const bars=market[tf].bars.slice(-windowSize),read=market[tf].metrics.slice(-windowSize);
+  if(!bars.length){geometry=null;$('ohlc').textContent='No confirmed candle';return;}
+  const left=4,right=w>480?78:66,top=12,bottom=27,cw=w-left-right,ch=h-top-bottom,step=cw/bars.length,x=i=>left+(i+.5)*step;
+  const values=bars.flatMap((b,i)=>[b.l,b.h,...Object.keys(overlays).filter(k=>overlays[k]&&read[i][k]!==null).map(k=>read[i][k])]);
+  let low=Math.min(...values),high=Math.max(...values);
+  const margin=Math.max(.012, (high-low)*.09);low-=margin;high+=margin;
+  const y=v=>top+(high-v)/(high-low)*ch;
+  geometry={left,step,count:bars.length};
+  ctx.font='11px ui-monospace, Consolas, monospace';ctx.textBaseline='middle';
+  const rough=(high-low)/5,base=10**Math.floor(Math.log10(rough)),tick=([1,2,2.5,5,10].find(n=>n*base>=rough)||10)*base;
+  for(let v=Math.ceil(low/tick)*tick,j=0;v<=high&&j<12;v+=tick,j++){
+    const py=Math.round(y(v))+.5;ctx.strokeStyle='#2c3039';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,py);ctx.lineTo(w-right,py);ctx.stroke();
+    ctx.fillStyle='#a3acb8';ctx.fillText(fmt(v),w-right+8,py);
   }
-  $('journalBody').innerHTML = `<div class="tablewrap"><table><thead><tr><th>Time (UTC)</th><th>Source</th><th>Side</th><th>Entry</th><th>Exit</th><th>Result</th><th>P/L ($)</th></tr></thead><tbody>${
-    rows.map(r => `<tr>
-      <td class="mono">${stamp(r.closedAt)}</td>
-      <td>${r.source} (${r.period})</td>
-      <td class="${r.side === 'BUY' ? 'up' : 'down'}"><strong>${r.side}</strong></td>
-      <td class="mono">${fmt(r.entry)}</td>
-      <td class="mono">${fmt(r.exit)}</td>
-      <td>${r.note}</td>
-      <td class="mono ${r.pnl >= 0 ? 'up' : 'down'}"><strong>${signed(r.pnl)}</strong></td>
-    </tr>`).join('')
-  }</tbody></table></div>`;
-}
-
-function renderGuideCards() {
-  const m1 = analyzeTimeframe(1), m5 = analyzeTimeframe(5), m15 = analyzeTimeframe(15);
-  const cards = [
-    ['EMA 9 & EMA 21 Crossover', m1.fast ? `${fmt(m1.fast)} / ${fmt(m1.slow)}` : '—', 'Tracks short-term trend direction and momentum slope across M1, M5, and M15. Flat separation flags a choppy market and forces WAIT.'],
-    ['RSI (14) Exhaustion Guard', m1.rsi ? `M1 ${m1.rsi.toFixed(1)} · M5 ${m5.rsi ? m5.rsi.toFixed(1) : '—'}` : '—', 'Confirms momentum (>53 bullish, <47 bearish) while blocking entries when price is overbought (>75) or oversold (<25).'],
-    ['ATR (14) Stop & Collect Profit', m1.atr ? `M1 ${fmt(m1.atr)} · M5 ${m5.atr ? fmt(m5.atr) : '—'}` : '—', 'Sizes dynamic Stop Loss levels using volatility + recent 5-bar swing high/low. TP1 targets 1.5R and TP2 targets 2.5R.'],
-    ['M15 Higher-Timeframe Filter', m15.label || 'Warmup', 'Prevents low-probability counter-trend scalps on M1/M5. Counter-M15 signals require at least 70% probability confluence.']
-  ];
-  $('guideCards').innerHTML = cards.map(([title, val, desc]) =>
-    `<article class="guidecard"><div class="guidevalue"><h2>${title}</h2><span class="mono">${val}</span></div><p>${desc}</p></article>`
-  ).join('');
-}
-
-let tvInterval = '1';
-function mountTradingView(interval = '1') {
-  tvInterval = String(interval);
-  $('tvLink').href = `https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&interval=${tvInterval}`;
-  const frame = $('marketFrame');
-  frame.innerHTML = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>`;
-  const sc = document.createElement('script');
-  sc.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-  sc.async = true;
-  sc.textContent = JSON.stringify({
-    autosize: true, symbol: 'FX_IDC:XAUUSD', interval: tvInterval, timezone: 'Etc/UTC',
-    theme: 'dark', style: '1', locale: 'en', allow_symbol_change: false, hide_side_toolbar: false
+  const stride=Math.max(1,Math.ceil(72/step));
+  for(let i=1;i<bars.length;i++){
+    const gap=bars[i].t-bars[i-1].t!==tf*MIN;
+    if(i%stride!==0&&!gap)continue;
+    const px=x(i);ctx.strokeStyle=gap?'#89754a':'#252b32';ctx.setLineDash(gap?[3,4]:[]);ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,top+ch);ctx.stroke();ctx.setLineDash([]);
+    if(i%stride===0&&px>20&&px<cw-18){ctx.fillStyle='#a3acb8';ctx.textAlign='center';ctx.fillText(utcClock(bars[i].t),px,h-12);ctx.textAlign='left';}
+  }
+  ctx.save();ctx.beginPath();ctx.rect(left,top,cw,ch);ctx.clip();
+  bars.forEach((b,i)=>{
+    const px=x(i),bw=Math.max(1,Math.min(11,step*.66)),color=b.c>=b.o?'#6bd8b3':'#ec9098';
+    ctx.strokeStyle=ctx.fillStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px,y(b.l));ctx.lineTo(px,y(b.h));ctx.stroke();
+    ctx.fillRect(px-bw/2,Math.min(y(b.o),y(b.c)),bw,Math.max(1.25,Math.abs(y(b.o)-y(b.c))));
   });
-  frame.querySelector('.tradingview-widget-container').appendChild(sc);
+  for(const [key,color] of [['slow','#92a3d4'],['fast','#eaca82']]){
+    if(!overlays[key])continue;ctx.beginPath();let begun=false;
+    read.forEach((m,i)=>{if(m[key]===null){begun=false;return;}if(begun)ctx.lineTo(x(i),y(m[key]));else ctx.moveTo(x(i),y(m[key]));begun=true;});
+    ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
+  }
+  ctx.restore();
+  const end=last(bars),py=y(end.c),tint=end.c>=end.o?'#6bd8b3':'#ed959c';
+  ctx.strokeStyle=tint+'99';ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(left,py);ctx.lineTo(w-right+3,py);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=tint;ctx.fillRect(w-right+3,py-9,right-3,18);ctx.fillStyle='#121816';ctx.fillText(fmt(end.c),w-right+8,py);
+  if(hover===null){candleFields(end,false);return;}
+  hover=Math.max(0,Math.min(hover,bars.length-1));const px=x(hover),picked=bars[hover];
+  ctx.strokeStyle='#c7cbd4';ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,top+ch);ctx.stroke();ctx.setLineDash([]);candleFields(picked,true);
 }
-
-/* ==================== NAVIGATION & DIALOG EVENTS ==================== */
-function route() {
-  const hash = (location.hash || '#workspace').slice(1);
-  const valid = ['workspace', 'practice', 'journal', 'guide', 'market'];
-  const page = valid.includes(hash) ? hash : 'workspace';
-  document.querySelectorAll('[data-page]').forEach(s => { s.hidden = s.id !== page; });
-  document.querySelectorAll('[data-nav]').forEach(a => {
-    if (a.dataset.nav === page) a.setAttribute('aria-current', 'page');
-    else a.removeAttribute('aria-current');
+function installPlot(){
+  const canvas=$('chart');
+  const reset=()=>{hover=null;drawPlot();};
+  const point=e=>{if(geometry){hover=Math.floor((e.clientX-canvas.getBoundingClientRect().left-geometry.left)/geometry.step);drawPlot();}};
+  canvas.addEventListener('pointerdown',point);canvas.addEventListener('pointermove',point);canvas.addEventListener('pointerleave',reset);canvas.addEventListener('blur',reset);
+  canvas.addEventListener('keydown',e=>{
+    if(!geometry)return;if(e.key==='Escape')return reset();
+    if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();
+    hover=(hover??geometry.count-1)+(e.key==='ArrowLeft'?-1:1);drawPlot();canvas.setAttribute('aria-label','Selected M'+tf+' candle. '+$('ohlc').innerText);
   });
-  if (page === 'workspace') drawPlot();
-  if (page === 'practice') paintPractice();
-  if (page === 'journal') renderJournal();
-  if (page === 'market' && !$('marketFrame').children.length) mountTradingView(tvInterval);
-}
-
-function wireEvents() {
-  window.addEventListener('hashchange', route);
-  $('refresh').onclick = () => loadLiveMarket(true);
-
-  // Tracker & risk buttons
-  $('btnTakeSignal').onclick = () => startActiveTrade(currentSignal);
-  $('btnCollectProfit').onclick = () => closeActiveTrade('COLLECT PROFIT (MANUAL)', market.spot.price ?? last(market[1].bars).c);
-  $('btnMoveBE').onclick = moveStopToBreakEven;
-  $('btnStopTrade').onclick = () => closeActiveTrade('MANUAL STOP EXIT', market.spot.price ?? last(market[1].bars).c);
-  $('clearSigLog').onclick = () => { state.signalHistory = []; saveState(); renderSignalLog(); };
-
-  $('riskProfile').value = state.riskProfile;
-  $('riskProfile').onchange = e => { state.riskProfile = e.target.value; saveState(); recomputeAndRenderSignal(false); drawPlot(); };
-  $('autoTrackChk').checked = state.autoTrack;
-  $('autoTrackChk').onchange = e => { state.autoTrack = e.target.checked; saveState(); };
-
-  // Practice buttons
-  $('paperInterval').onchange = e => { state.paper.interval = Number(e.target.value); saveState(); };
-  $('pipUnit').onchange = e => { state.paper.studyPip = Number(e.target.value); saveState(); paintPractice(); recomputeAndRenderSignal(false); };
-  $('step').onclick = stepPaperReplay;
-  $('historyLoad').onclick = async () => {
-    const intv = Number($('paperInterval').value) || 5;
-    $('practiceMsg').textContent = `Loading historical M${intv} XAUUSD candles…`;
-    try {
-      const res = await requestDerivCandles(intv * MIN, 260, true);
-      if (res.bars.length < 120) throw Error('Not enough historical bars returned.');
-      const split = Math.floor(res.bars.length * 0.65);
-      state.paper.interval = intv;
-      state.paper.source = 'deriv';
-      state.paper.bars = res.bars.slice(0, split);
-      state.paper.future = res.bars.slice(split);
-      state.paper.pos = null;
-      startStudy(state.paper, true);
-      saveState(); paintPractice();
-      $('practiceMsg').textContent = `Loaded ${res.bars.length} historical M${intv} candles. Ready to step through replay.`;
-    } catch (err) {
-      $('practiceMsg').textContent = err.message || 'Failed to load historical candles.';
-    }
+  for(const [id,key] of [['emaFast','fast'],['emaSlow','slow']])$(id).onclick=()=>{
+    overlays[key]=!overlays[key];$(id).setAttribute('aria-pressed',String(overlays[key]));drawPlot();
   };
-  $('csvFile').onchange = async e => {
-    const file = e.target.files?.[0]; if (!file) return;
-    try {
-      const intv = Number($('paperInterval').value) || 5;
-      const bars = readCSV(await file.text(), intv * MIN);
-      const split = Math.min(bars.length - 20, Math.max(80, Math.floor(bars.length * 0.65)));
-      state.paper.interval = intv;
-      state.paper.source = 'csv';
-      state.paper.bars = bars.slice(0, split);
-      state.paper.future = bars.slice(split);
-      state.paper.pos = null;
-      startStudy(state.paper, true);
-      saveState(); paintPractice();
-      $('practiceMsg').textContent = `Imported ${bars.length} CSV candles for M${intv}.`;
-    } catch (err) {
-      $('practiceMsg').textContent = err.message;
-    }
-    e.target.value = '';
-  };
-
-  $('clearJournal').onclick = () => { state.journal = []; saveState(); renderJournal(); showToast('Trade journal cleared'); };
-
-  // TradingView timeframe switcher
-  document.querySelectorAll('[data-tv]').forEach(b => b.onclick = () => {
-    document.querySelectorAll('[data-tv]').forEach(n => n.setAttribute('aria-pressed', String(n === b)));
-    mountTradingView(b.dataset.tv);
+  document.querySelectorAll('[data-count]').forEach(b=>b.onclick=()=>{
+    windowSize=Number(b.dataset.count);document.querySelectorAll('[data-count]').forEach(n=>n.setAttribute('aria-pressed',String(n===b)));reset();
   });
-
-  // Alerts dialog
-  const dlg = $('alertsDlg');
-  $('alertOpen').onclick = () => {
-    $('alertInterval').value = String(state.alerts.interval);
-    $('soundAlerts').checked = !!state.alerts.sound;
-    $('desktopHint').textContent = !('Notification' in window) ? 'Not supported in this browser.' : `Permission: ${Notification.permission}`;
-    dlg.showModal();
-  };
-  $('dismiss').onclick = () => dlg.close();
-  $('alertInterval').onchange = e => { state.alerts.interval = Number(e.target.value); saveState(); };
-  $('soundAlerts').onchange = e => { state.alerts.sound = e.target.checked; saveState(); };
-  $('desktop').onclick = async () => {
-    if (!('Notification' in window)) return;
-    const perm = await Notification.requestPermission();
-    $('desktopHint').textContent = 'Permission: ' + perm;
-  };
-  $('testAlert').onclick = () => {
-    notifyUser('Aurum Desk Test', 'Real-time BUY/SELL & Collect Profit alerts are active.', 'buy');
-    $('alertMsg').textContent = 'Test alert dispatched.';
-  };
+  document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>{
+    tf=Number(b.dataset.tf);hover=null;document.querySelectorAll('[data-tf]').forEach(n=>n.setAttribute('aria-pressed',String(n===b)));paintMarket();
+  });
+  if('ResizeObserver' in window)new ResizeObserver(drawPlot).observe(canvas);else window.addEventListener('resize',drawPlot);
 }
 
-/* ==================== CLOCK & AUTO-SYNC LOOP ==================== */
-let lastMinutePulled = -1;
-function startTimers() {
-  setInterval(() => {
-    const now = Date.now();
-    const secLeft = 60 - Math.floor((now % MIN) / 1000);
-    $('timer').textContent = String(secLeft).padStart(2, '0') + 's';
+// Historical replay only. Forecasts use labelled examples whose outcome was
+// already visible at the close being studied.
+const MODEL_CAP=1200, MATCHES=15, MIN_CASES=30;
+function studyDataset(p){
+  if(!p.bars.length || !['biquote','deriv','history','csv'].includes(p.source))return null;
+  return (p.source==='history'?'deriv':p.source)+'-'+paperPeriod(p);
+}
+function studyWindow(bars,i,period){
+  if(i<5)return null;
+  const b=bars[i],first=bars[i-5];
+  if(b.t-first.t!==5*period)return null;
+  let scale=0;
+  for(let j=i-4;j<=i;j++){
+    if(bars[j].t!==bars[j-1].t+period)return null;
+    scale+=bars[j].h-bars[j].l;
+  }
+  scale/=5;if(!Number.isFinite(scale)||scale<=0)return null;
+  const clip=x=>Math.max(-3,Math.min(3,x));
+  const span=b.h-b.l;
+  return {scale,x:[clip((b.c-b.o)/scale),clip((b.c-bars[i-3].c)/scale),
+    span?2*(b.c-b.l)/span-1:0,clip(span/scale-1)]};
+}
+function studyQuantile(sorted,p){
+  const n=(sorted.length-1)*p,k=Math.floor(n),fraction=n-k;
+  return sorted[k]+fraction*(sorted[Math.min(k+1,sorted.length-1)]-sorted[k]);
+}
+function studyForecast(bars,period,rows){
+  const b=last(bars),features=studyWindow(bars,bars.length-1,period);
+  if(!b||!features)return {side:0,reason:'warmup',n:0};
+  const prior=rows.filter(r=>r.t+period<=b.t);
+  if(prior.length<MIN_CASES)return {side:0,reason:'warmup',n:prior.length};
+  const ranked=prior.map(r=>{
+    let distance=0;for(let j=0;j<features.x.length;j++)distance+=(features.x[j]-r.x[j])**2;
+    return {r,distance};
+  }).sort((a,b)=>a.distance-b.distance||b.r.t-a.r.t).slice(0,MATCHES);
+  const moves=ranked.map(item=>item.r.y*features.scale).sort((a,b)=>a-b);
+  const up=moves.filter(v=>v>0).length,down=moves.filter(v=>v<0).length;
+  return {side:up>=10?1:down>=10?-1:0,reason:'matches',n:prior.length,up,down,
+    low:studyQuantile(moves,.25),mid:studyQuantile(moves,.5),high:studyQuantile(moves,.75)};
+}
+function addStudyCase(book,bars,i,period,call){
+  const b=bars[i],next=bars[i+1];
+  if(!next||next.t!==b.t+period)return;
+  const features=studyWindow(bars,i,period);if(!features)return;
+  const delta=next.c-b.c,existing=book.find(r=>r.t===b.t);
+  if(existing)return; // First observation and first scored attempt are immutable.
+  book.push({t:b.t,x:features.x,y:delta/features.scale,delta,call});
+}
+function trimBook(book){book.sort((a,b)=>a.t-b.t);if(book.length>MODEL_CAP)book.splice(0,book.length-MODEL_CAP);}
+function isHistoricalPoint(p){
+  const b=last(p.bars);
+  return !!b&&b.t+paperPeriod(p)<=Date.now()-60*MIN;
+}
+function startStudy(p,newSession=false){
+  const key=studyDataset(p);p.studyPending=null;
+  if(!key||!isHistoricalPoint(p))return;
+  p.studyBooks??={};
+  if(newSession&&p.source==='csv')delete p.studyBooks[key]; // Each uploaded series has its own training run.
+  const book=p.studyBooks[key] ??= [];
+  const seen=new Set(book.map(r=>r.t));
+  const period=paperPeriod(p);
+  for(let i=5;i<p.bars.length-1;i++)if(!seen.has(p.bars[i].t))addStudyCase(book,p.bars,i,period,null);
+  trimBook(book);freezeStudy(p);
+}
+function freezeStudy(p){
+  const key=studyDataset(p);p.studyPending=null;
+  if(!key||!p.future.length||!isHistoricalPoint(p))return;
+  const b=last(p.bars),book=p.studyBooks?.[key]??[];
+  p.studyPending={key,t:b.t,close:b.c,...studyForecast(p.bars,paperPeriod(p),book)};
+}
+function learnRevealed(p,prior){
+  const key=studyDataset(p);if(!key||!isHistoricalPoint(p))return;
+  if(!p.studyBooks?.[key]){startStudy(p);return;}
+  const book=p.studyBooks[key],i=p.bars.length-2;
+  const call=prior&&prior.key===key&&prior.t===p.bars[i].t&&prior.close===p.bars[i].c?prior.side:null;
+  addStudyCase(book,p.bars,i,paperPeriod(p),call);
+  trimBook(book);freezeStudy(p);
+}
+function scoreStudy(book,cutoff,period){
+  const graded=book.filter(r=>r.t+period<=cutoff&&r.call!==null).slice(-100);
+  const calls=graded.filter(r=>r.call===1||r.call===-1);
+  return {calls:calls.length,waits:graded.length-calls.length,
+    correct:calls.filter(r=>Math.sign(r.delta)===r.call).length,
+    up:calls.filter(r=>r.delta>0).length,total:calls.reduce((n,r)=>n+r.delta*r.call,0)};
+}
+function studyPip(p){return p.studyPip===0.1 ? 0.1 : 0.01;}
+function pipText(price,pip){
+  const v=price/pip;return (v<0?'−':v>0?'+':'')+Math.abs(v).toLocaleString('en-US',{maximumFractionDigits:1})+' pips';
+}
+function paintStudy(p){
+  const key=studyDataset(p),panel=$('studyContent'),pending=p.studyPending,b=last(p.bars);
+  const pip=studyPip(p);$('pipUnit').value=String(pip);
+  if(!key||!isHistoricalPoint(p)){
+    panel.innerHTML='<p class="empty">Choose M1 or M5 above and load past market candles to see the first paper forecast.</p>';return;
+  }
+  const period=paperPeriod(p),book=p.studyBooks?.[key]??[],scores=scoreStudy(book,b.t,period);
+  const f=pending?.t===b.t&&pending?.key===key?pending:null;
+  const title=!f?(p.future.length?'Preparing model':'Session complete'):f.side===1?'Paper buy':f.side===-1?'Paper sell':'Wait';
+  const reason=!f?(p.future.length?'Preparing the forecast from earlier candles.':'The last candle has been revealed. Load another historical session to continue.'):f.reason==='warmup'?'Collecting continuous candle data and at least 30 earlier labelled examples.':
+    f.up+' of 15 similar candles closed higher one bar later, '+f.down+' closed lower and '+(15-f.up-f.down)+' were flat.';
+  let scenario='';
+  if(f?.reason==='matches'){
+    const side=f.side||1,lo=side===-1?-f.high:f.low,hi=side===-1?-f.low:f.high;
+    scenario=statCards([[f.side?'Median paper result':'Median price change',pipText(f.mid*side,pip)],[f.side?'Middle 50% of paper results':'Middle 50% of price changes',pipText(lo,pip)+' to '+pipText(hi,pip)]]);
+  }
+  let scored='No scored calls yet';
+  if(scores.calls){
+    const count=scores.correct+' of '+scores.calls+' correct';
+    scored=scores.calls<20?count+' · small sample':count+' ('+Math.round(100*scores.correct/scores.calls)+'%)';
+  }
+  const baseline=scores.calls?'Always-up comparison on the same calls: '+scores.up+' of '+scores.calls+' correct. Mean gross paper result: '+pipText(scores.total/scores.calls,pip)+'.':'Advance the replay to compare each frozen forecast with the next actual close.';
+  const eligible=book.filter(r=>r.t+period<=b.t).length;
+  const prior=book.find(r=>r.t+period===b.t&&r.call!==null);
+  const lastGrade=prior?'<p><b>Previous forecast · '+(prior.call===1?'Paper buy':prior.call===-1?'Paper sell':'Wait')+'</b> · Actual price change '+pipText(prior.delta,pip)+(prior.call?' · Gross paper result '+pipText(prior.delta*prior.call,pip):'')+'.</p>':'';
+  panel.innerHTML='<div class="studyIntro"><div><div class="smallcap">Historical M'+(period/MIN)+' · '+stamp(b.t+period)+'</div><h3 class="'+(f?.side===1?'up':f?.side===-1?'down':'gold')+'">'+title+'</h3><p>'+reason+'</p></div><div class="studyRef"><span>Replay close</span><strong>'+usd(b.c)+'</strong><small>Next '+(period/MIN)+'-minute close</small></div></div>'+
+   (scenario?'<div class="studyResults">'+scenario+'</div>':'')+
+   '<div class="studyScore"><b>Direction accuracy · '+scored+'</b>'+lastGrade+'<p>'+baseline+'</p><p>'+eligible+' earlier examples available · '+scores.waits+' waits in the latest '+(scores.calls+scores.waits)+' evaluated observations.</p></div>';
+}
 
-    // Automatically refresh closed M1/M5/M15 candles ~3 seconds after each new minute
-    const curMin = Math.floor(now / MIN);
-    if (secLeft === 57 && curMin !== lastMinutePulled) {
-      lastMinutePulled = curMin;
-      loadLiveMarket(false);
+const PAPER_KEY='aurum-desk.paper.v2',OLD_KEY='aurum-desk.xauusd.v1';
+const NAMES={csv:'Historical CSV',history:'Market history',sample:'Legacy simulation',biquote:'biquote history',deriv:'Deriv history'};
+let memoryOnly=false,qty=.1,paperLoading=false;
+function warnStorage(){memoryOnly=true;$('saveWarn').hidden=false;$('saveWarn').textContent='Browser storage is unavailable. Your paper account will last for this tab session.';}
+function readLocal(key){
+  if(memoryOnly)return null;
+  try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):null;}catch{warnStorage();return null;}
+}
+function putLocal(key,data){
+  if(memoryOnly)return;try{localStorage.setItem(key,JSON.stringify(data));}catch{warnStorage();}
+}
+function newPaper(){
+  const p={balance:10000,position:null,trades:[],source:null,bars:[],future:[],due:Date.now()+FIVE};
+  const prior=readLocal(OLD_KEY);
+  if(prior?.version===1&&Number.isFinite(prior.balance)&&Array.isArray(prior.trades)){
+    p.balance=prior.balance;p.trades=prior.trades;
+    if(prior.source==='csv'&&Array.isArray(prior.bars)&&prior.bars.length){
+      Object.assign(p,{source:'csv',bars:prior.bars,future:prior.future||[],position:prior.position});
+    }else if(prior.position&&Array.isArray(prior.bars)&&prior.bars.length){
+      Object.assign(p,{source:'sample',bars:[last(prior.bars)],position:prior.position});
     }
-  }, 1000);
-
-  // Backup spot quote check every 30s if tick stream pauses
-  setInterval(fetchSpotFallback, 30000);
+  }
+  return p;
+}
+let paper=readLocal(PAPER_KEY)||newPaper();if(!readLocal(PAPER_KEY))putLocal(PAPER_KEY,paper);
+async function editPaper(edit){
+  const run=()=>{paper=readLocal(PAPER_KEY)||paper;if(edit(paper)!==false)putLocal(PAPER_KEY,paper);renderPaper();};
+  if(navigator.locks?.request)await navigator.locks.request(PAPER_KEY,run);else run();
+}
+function pnl(p){return p.position&&p.bars.length?moneyRound((last(p.bars).c-p.position.entry)*p.position.side*p.position.size):0;}
+function paperPeriod(p){return p.period===MIN?MIN:FIVE;}
+function pickSource(p,bars,source,period=FIVE){
+  if(p.position)throw Error('Close your current paper position before loading another session.');
+  if(bars.length<145)throw Error('Fewer than 145 past candles are available.');
+  Object.assign(p,{source,period,bars:bars.slice(0,144),future:bars.slice(144),due:Date.now()+period});
+  startStudy(p,true);
+}
+function rowsOrEmpty(items){
+  return items.length?'<div class="tablewrap"><table><thead><tr><th>Exit · UTC</th><th>Side / size</th><th>Entry</th><th>Exit</th><th>P/L · USD</th><th>Source</th></tr></thead><tbody>'+items.map(t=>
+    '<tr><td>'+stamp(Number(t.exitT))+'</td><td>'+(t.side===1?'Long':'Short')+' · '+Number(t.size)+' oz</td><td>'+fmt(t.entry)+'</td><td>'+fmt(t.exit)+'</td><td class="'+(t.pnl<0?'down':'up')+'">'+signed(t.pnl)+'</td><td>'+(NAMES[t.source]||'Historical')+' · M'+(paperPeriod(t)/MIN)+'</td></tr>'
+  ).join('')+'</tbody></table></div>':'<p class="empty">Your closed practice trades will appear here.</p>';
+}
+function statCards(items){return items.map(([label,value])=>'<div class="summarybox"><span class="metricLabel">'+label+'</span><b>'+value+'</b></div>').join('');}
+function entryReview(p) {
+  const pos=p.position;
+  const after=p.bars.filter(b=>b.t>=pos.t);
+  if(!after.length)return '<p class="meta entryreview">Entry recorded. Advance one historical candle to review the result.</p>';
+  // Only bars already revealed after the entry can contribute to this review.
+  const moves=after.flatMap(b=>[(b.l-pos.entry)*pos.side,(b.h-pos.entry)*pos.side]);
+  const favorable=Math.max(0,...moves),adverse=Math.min(0,...moves);
+  return '<p class="meta entryreview">Since your paper entry · '+after.length+' observed candle'+(after.length===1?'':'s')+
+    ' · Largest move in your favour '+fmt(favorable)+' USD/oz · Largest move against you '+fmt(Math.abs(adverse))+' USD/oz.</p>';
+}
+function renderPaper(){
+  const p=paper,bar=last(p.bars),pos=p.position;paintStudy(p);
+  $('paperStats').innerHTML=statCards([['Paper equity',usd(p.balance+pnl(p))],['Historical close',bar?usd(bar.c):'—'],['Candles remaining',String(p.future.length)]]);
+  $('journalStats').innerHTML=statCards([['Closed trades',p.trades.length],['Realized P/L',signed(p.balance-10000)+' USD'],['Paper balance',usd(p.balance)]]);
+  $('journalBody').innerHTML=rowsOrEmpty(p.trades);
+  $('historyLoad').disabled=paperLoading||!!pos;$('historyLoad').textContent=paperLoading?'Loading history…':'Load past market candles';
+  $('csvFile').disabled=!!pos||paperLoading;$('step').disabled=!p.future.length||paperLoading;$('paperInterval').disabled=!!pos||paperLoading;
+  $('paperDate').textContent=bar?('M'+paperPeriod(p)/MIN+' · '+stamp(bar.t+paperPeriod(p))):'HISTORICAL';
+  if(!bar){$('paperTicket').innerHTML='<p class="empty">Load past market candles or import a historical CSV to begin.</p>';return;}
+  const candleInfo='<p class="meta">'+(NAMES[p.source]||'Historical')+' · O '+fmt(bar.o)+' · H '+fmt(bar.h)+' · L '+fmt(bar.l)+' · C '+fmt(bar.c)+' · Range '+fmt(bar.h-bar.l)+' USD/oz</p>';
+  if(pos){
+    $('paperTicket').innerHTML=candleInfo+'<div class="ticketinfo"><strong>'+(pos.side===1?'Long':'Short')+' · '+Number(pos.size)+' oz at '+usd(pos.entry)+'</strong><span>Open P/L '+signed(pnl(p))+' USD</span></div>'+entryReview(p)+'<button id="exitPaper" class="btn">Close paper position</button>';
+    $('exitPaper').onclick=()=>editPaper(x=>{
+      if(!x.position)return false;
+      const b=last(x.bars),profit=pnl(x);x.trades.unshift({...x.position,exit:b.c,exitT:b.t+paperPeriod(x),pnl:profit});x.balance=moneyRound(x.balance+profit);x.position=null;
+      if(x.source==='sample'){x.bars=[];x.source=null;}$('practiceMsg').textContent='Paper trade saved to the journal.';
+    });return;
+  }
+  $('paperTicket').innerHTML=candleInfo+'<div class="ticketcontrols"><label>Size <select id="size"><option value="0.1">0.1 oz</option><option value="0.5">0.5 oz</option><option value="1">1 oz</option></select></label><button class="btn buy" id="buy">Paper buy</button><button class="btn sell" id="sell">Paper sell</button></div>';
+  const applySize=()=>{qty=Number($('size').value);const block=!p.future.length||bar.c*qty>p.balance||paperLoading;$('buy').disabled=block;$('sell').disabled=block;};
+  $('size').value=String(qty);$('size').onchange=applySize;applySize();
+  const order=side=>editPaper(x=>{
+    if(!x.future.length||x.position||last(x.bars).c*qty>x.balance||paperLoading)return false;
+    const b=last(x.bars);x.position={t:b.t+paperPeriod(x),period:paperPeriod(x),entry:b.c,side,size:qty,source:x.source};$('practiceMsg').textContent='Historical paper position opened.';
+  });
+  $('buy').onclick=()=>order(1);$('sell').onclick=()=>order(-1);
+}
+function stepPaper(auto=false){
+  return editPaper(p=>{if(!p.future.length||(auto&&Date.now()<p.due))return false;
+    if(!p.studyBooks?.[studyDataset(p)])startStudy(p);
+    const prior=p.studyPending;
+    p.bars.push(p.future.shift());if(p.bars.length>720)p.bars.shift();p.due=Date.now()+paperPeriod(p);learnRevealed(p,prior);
+    $('practiceMsg').textContent=p.future.length?'Advanced one historical M'+(paperPeriod(p)/MIN)+' candle.':'End of this session. An open position can still be closed.';
+  });
+}
+function initPaper(){
+  if(paper.bars.length)$('paperInterval').value=String(paperPeriod(paper)/MIN);
+  $('pipUnit').onchange=e=>{const unit=Number(e.target.value);editPaper(p=>{p.studyPip=unit===0.1 ? 0.1 : 0.01;});};
+  if(studyDataset(paper)&&isHistoricalPoint(paper)&&(!paper.studyBooks?.[studyDataset(paper)]||(!paper.studyPending&&paper.future.length))){
+    editPaper(p=>startStudy(p));
+  }
+  $('step').onclick=()=>stepPaper();
+  $('historyLoad').onclick=async()=>{
+    if(paperLoading)return;
+    const period=Number($('paperInterval').value)===1?MIN:FIVE;
+    paperLoading=true;renderPaper();$('practiceMsg').textContent='Loading historical M'+(period/MIN)+' candles…';
+    try{
+      let bars,source;
+      try{
+        const response=await httpCandles(period,300);
+        bars=response.bars.filter(b=>b.t+period<=Date.now()-60*MIN);
+        if(bars.length<145)throw Error('Insufficient history.');
+        source='biquote';
+      }catch{
+        const response=await requestCandles(period,320,true);bars=response.bars;source='deriv';
+      }
+      await editPaper(p=>pickSource(p,bars,source,period));
+      $('practiceMsg').textContent='Loaded '+bars.length+' historical M'+(period/MIN)+' candles from '+NAMES[source]+'. The replay reveals one candle at a time.';
+    }
+    catch(err){$('practiceMsg').textContent=err.message+' You can also import a historical CSV.';}
+    finally{paperLoading=false;renderPaper();}
+  };
+  $('csvFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;
+    try{if(file.size>2e6)throw Error('Choose a file smaller than 2 MB.');
+      const period=Number($('paperInterval').value)===1?MIN:FIVE;
+      const bars=readCSV(await file.text(),period);await editPaper(p=>pickSource(p,bars,'csv',period));$('practiceMsg').textContent='Historical CSV loaded.';}
+    catch(err){$('practiceMsg').textContent=err.message;}e.target.value='';
+  };
+  window.addEventListener('storage',e=>{if(e.key===PAPER_KEY){paper=readLocal(PAPER_KEY)||paper;renderPaper();}});
 }
 
-/* ==================== BOOTSTRAP ==================== */
-loadState();
-installPlot();
-wireEvents();
-renderSignalLog();
-renderJournal();
-route();
-startTickStream();
-loadLiveMarket(false);
-fetchSpotFallback();
-startTimers();
-</script>
-</body>
-</html>
+// An independent HTTPS path works in browsers that cannot open a WebSocket.
+const candleNames={https:'biquote',socket:'Deriv'};
+const cooldowns=new Map();
+async function fetchMarketJSON(url) {
+  const host=new URL(url).hostname;
+  if((cooldowns.get(host)||0)>Date.now())throw Error('Provider asked us to retry later.');
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  try {
+    const r=await fetch(url,{cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:controller.signal});
+    if(!r.ok){
+      if(r.status===429||r.status===503){
+        const delay=Number(r.headers.get('Retry-After'))||60;
+        cooldowns.set(host,Date.now()+Math.max(1000,delay*1000));
+      }
+      throw Error('Provider returned HTTP '+r.status+'.');
+    }
+    return await r.json();
+  } catch(e){
+    if(e.name==='AbortError')throw Error('Request timed out.');
+    if(e instanceof TypeError)throw Error('Browser could not reach the provider.');
+    throw e;
+  } finally{clearTimeout(timeout);}
+}
+function parseBiquote(body,period,asOf){
+  const interval=String(period/MIN)+'m';
+  if(body?.symbol!=='XAUUSD'||body.interval!==interval||!Array.isArray(body.bars))throw Error('Unexpected instrument or interval.');
+  const rows=body.bars.filter(b=>b?.isOpen===false && typeof b.openTime==='string' && /(?:Z|[+-]\d\d:\d\d)$/i.test(b.openTime))
+    .map(b=>({...b,epoch:Date.parse(b.openTime)/1000}));
+  const cutoff=Math.floor(asOf/period)*period,bars=closedRows(rows,period,cutoff);
+  if(!bars.length)throw Error('No completed XAUUSD candles returned.');
+  return {asOf,at:performance.now(),cutoff,bars};
+}
+async function httpCandles(period=MIN,limit=300) {
+  const url='https://biquote.io/api/XAUUSD/ohlc?interval='+(period/MIN)+'m&limit='+Math.min(300,limit);
+  const data=await fetchMarketJSON(url);
+  return parseBiquote(data,period,Date.now());
+}
+function describeError(e){return e instanceof Error?e.message:'Connection unavailable.';}
+function endOfAnswer(a){return last(a.bars).t+MIN;}
+function answerAge(a){return Math.max(a.asOf,Date.now())-endOfAnswer(a);}
+let candleSource=null,connectionInfo={https:'Waiting',socket:'Standby'};
+async function selectCandles(previous,full){
+  const order=candleSource==='socket'?['socket','https']:['https','socket'];
+  let best=null;
+  for(const source of order){
+    try{
+      const newHistory=source!==candleSource||full;
+      const a=source==='https'?await httpCandles(MIN,newHistory?300:40):await requestCandles(MIN,newHistory?850:40);
+      const end=endOfAnswer(a),age=answerAge(a);
+      if(age < -4000 || end<previous)throw Error('Earlier or future-dated response.');
+      const candidate={...a,source,replace:newHistory};
+      connectionInfo[source]='Last closed M1 '+stamp(end);
+      if(!best||end>endOfAnswer(best))best=candidate;
+      if(age<MIN+6500)return candidate;
+    }catch(e){connectionInfo[source]=describeError(e);}
+  }
+  if(best)return best;
+  throw Error('Both candle connections are unavailable.');
+}
+let spotHTTP=null,spotTick=null,spotBusy=false,spotLastTry=-Infinity,tickWS=null,tickRetry=0,tickAttempts=0,tickStarted=0,tickHeard=0;
+let spotHttpIssue='Waiting',spotStreamInfo='Connecting';
+function quoteAge(q){return q?Date.now()-q.t:Infinity;}
+function validQuote(value,t){return numeric(value)&&Number(value)>0&&Number.isSafeInteger(Math.round(Number(value)*100))&&Number.isFinite(t)&&t>0&&t<=Date.now()+4000;}
+async function checkSpot(){
+  if(spotBusy||performance.now()-spotLastTry<30000)return;
+  spotBusy=true;spotLastTry=performance.now();
+  try{
+    const q=await fetchMarketJSON('https://api.gold-api.com/price/XAU'),t=Date.parse(q.updatedAt);
+    if(q.symbol!=='XAU'||(q.currency&&q.currency!=='USD')||!validQuote(q.price,t))throw Error('Invalid or future-dated quote.');
+    if(spotHTTP&&spotHTTP.t>t)throw Error('The provider returned an earlier update.');
+    spotHTTP={price:Number(q.price),t};spotHttpIssue='';
+  }catch(e){spotHttpIssue=describeError(e);}
+  finally{spotBusy=false;renderQuote();}
+}
+function connectTicks(){
+  if(tickWS||performance.now()<tickRetry)return;
+  tickStarted=performance.now();tickHeard=0;
+  const failed=()=>{spotStreamInfo='Reconnecting';tickWS=null;tickAttempts=Math.min(5,tickAttempts+1);tickRetry=performance.now()+Math.min(300000,10000*2**tickAttempts);};
+  let ws;
+  try{ws=new WebSocket(WS_URL);}catch{failed();return;}
+  tickWS=ws;
+  ws.onopen=()=>{if(ws===tickWS)ws.send(JSON.stringify({ticks:INSTRUMENT,subscribe:1,req_id:73}));};
+  ws.onmessage=event=>{
+    if(ws!==tickWS)return;
+    try{
+      const msg=JSON.parse(event.data);
+      if(msg.error){ws.close();return;}
+      const q=msg.tick;
+      if(msg.msg_type!=='tick'||!q||(q.symbol??msg.echo_req?.ticks)!==INSTRUMENT)return;
+      const t=Number(q.epoch)*1000;
+      if(!validQuote(q.quote,t)||(spotTick&&spotTick.t>t))return;
+      spotTick={price:Number(q.quote),t};tickHeard=performance.now();tickAttempts=0;spotStreamInfo='Receiving ticks';renderQuote();
+    }catch{/* Ignore malformed frames. */}
+  };
+  ws.onerror=()=>{if(ws===tickWS)ws.close();};ws.onclose=()=>{if(ws===tickWS)failed();};
+}
+function maintainQuotes(){
+  if(!document.hidden){
+    if(tickWS&&performance.now()-(tickHeard||tickStarted)>(tickHeard?80000:12000))tickWS.close();
+    connectTicks();checkSpot();
+  }
+  renderQuote();
+}
+function currentQuote(){
+  if(spotTick&&quoteAge(spotTick)<18000)return {...spotTick,label:'Deriv tick',fresh:true};
+  if(spotHTTP&&!spotHttpIssue&&quoteAge(spotHTTP)<90000)return {...spotHTTP,label:'Gold API · 30 s quote',fresh:true};
+  const best=spotTick&&(!spotHTTP||spotTick.t>spotHTTP.t)?spotTick:spotHTTP;
+  if(best)return {...best,label:best===spotTick?'Last Deriv tick':'Last Gold API quote',fresh:false};
+  return null;
+}
+function renderQuote(){
+  const q=currentQuote();
+  if(q){
+    setText('spotValue',fmt(q.price));const age=Math.max(0,Math.floor(quoteAge(q)/1000));
+    const label=q.label+' · '+new Date(q.t).toISOString().slice(11,19)+' UTC';
+    setText('spotAge',q.fresh?(age+'s ago'):'Earlier quote');$('spotAge').className=q.fresh?'up':'gold';
+    setText('spotMeta',label);
+    $('spotMeta').title=stamp(q.t)+' · USD per troy ounce';
+  }else{
+    setText('spotValue','—');setText('spotAge','');setText('spotMeta',spotHttpIssue&&spotHttpIssue!=='Waiting'?'Quote feed unavailable':'Waiting for market price…');
+  }
+  setText('connHTTPS',connectionInfo.https);setText('connWS',connectionInfo.socket);setText('connStream',spotStreamInfo);
+  setText('connSpot',spotHttpIssue||(spotHTTP?'Provider updated '+stamp(spotHTTP.t):'Waiting'));
+}
+
+const nfmt=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=v=>Number.isFinite(v)?nfmt.format(v):'—',usd=v=>'$'+fmt(v),signed=v=>(v>0?'+':v<0?'−':'')+fmt(Math.abs(v));
+const setText=(id,value)=>{$(id).textContent=value;};
+const market={1:{bars:[],metrics:[]},5:{bars:[],metrics:[]}};
+let backupInterval=0;
+let providerClock=null,lastFetch=0,nextCheck=0,fetching=false,feedError='',seenCutoff=0,activePage='workspace',tvTf=1,tvBuilt=0,toastId;
+const nowServer=()=>providerClock?providerClock.asOf+performance.now()-providerClock.at:Date.now();
+const endTime=(tf)=>{const b=last(market[tf].bars);return b?b.t+tf*MIN:0;};
+function freshness(tf=1){
+  const end=endTime(tf);return !feedError&&providerClock&&end&&nowServer()-end<tf*MIN+6500;
+}
+function showToast(msg){setText('toast',msg);$('toast').classList.add('show');clearTimeout(toastId);toastId=setTimeout(()=>$('toast').classList.remove('show'),5000);}
+function status(){
+  let badge,detail;const latest=endTime(1);
+  if(feedError){badge='Candles unavailable';detail=(latest?'Last confirmed candle '+stamp(latest)+'. ':'Candle requests failed. ')+(currentQuote()?.fresh?'The spot quote is updating separately. ':'')+'See Data connections for details.'+(window.self!==window.top||location.protocol==='file:'?' If this is a file preview, open the published GitHub Pages site.':'');}
+  else if(!latest){badge='Connecting';detail='Requesting completed XAUUSD candles from the market feed…';}
+  else if(!freshness()){badge='Data delayed';detail='Latest available close '+stamp(latest)+'. The feed may be delayed or the market may be closed.';}
+  else {badge='Up to date';detail='Latest confirmed M1 close '+stamp(latest)+' · '+candleNames[candleSource];}
+  if($('feedText').textContent!==detail)setText('feedText',detail);
+  setText('feedBadge',badge);$('feedBadge').className='feedbadge'+(badge==='Up to date'?' ok':'');
+  const hasBar=endTime(tf);
+  const expected=providerClock?Math.floor((nowServer()-6500)/(tf*MIN))*tf*MIN:0;
+  const staleInterval=!!hasBar&&(!!feedError||hasBar<expected);
+  const assessmentTag='M'+tf+(staleInterval?' · EARLIER CLOSE':'');
+  if($('analysisTf').textContent!==assessmentTag)setText('analysisTf',assessmentTag);
+  if(endTime(5)){
+    const oldFive=feedError||endTime(5)<Math.floor((nowServer()-6500)/FIVE)*FIVE;
+    const msg=oldFive?'Last confirmed '+stamp(endTime(5)):stamp(endTime(5)).slice(0,10)+' · Five verified M1 bars';
+    if($('closeMeta').textContent!==msg)setText('closeMeta',msg);
+  }
+  const n=Math.ceil(Math.max(0,nextCheck-performance.now())/1000);
+  setText('timer',fetching?'Checking':String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0'));
+  $('refresh').disabled=fetching||performance.now()-lastFetch<4500;
+}
+function paintMarket(){
+  const m1=last(market[1].bars),m5=last(market[5].bars),d1=last(market[1].metrics)?.change;
+  setText('quote',m1?fmt(m1.c):'—');setText('quoteMeta',m1?'USD/oz · '+utcClock(m1.t+MIN)+' UTC close':'USD per troy ounce');
+  setText('delta',Number.isFinite(d1)?signed(d1):'—');$('delta').className='metvalue mono '+(d1>0?'up':d1<0?'down':'');
+  setText('range5',m5?fmt(m5.h-m5.l):'—');setText('close5',m5?utcClock(m5.t+FIVE)+' UTC':'—');setText('closeMeta',m5?stamp(m5.t+FIVE).slice(0,10)+' · Five verified M1 bars':'Requires five consecutive minutes');
+  const bars=market[tf].bars,b=last(bars),a=last(market[tf].metrics);
+  $('chartEmpty').hidden=!!b;setText('chartEmpty',feedError?'Market feed unavailable. Waiting to reconnect.':'Waiting for confirmed M'+tf+' candles…');
+  setText('analysisTf','M'+tf);
+  setText('chartProvider',candleNames[candleSource]||'XAUUSD market data');
+  $('liveRef').href='https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&interval='+tf;
+  if(b){
+    const body=b.c-b.o,span=b.h-b.l,dir=body>0?'Closed higher':body<0?'Closed lower':'Unchanged';
+    setText('direction',dir);$('direction').className='signalword '+(body>0?'up':body<0?'down':'gold');
+    setText('summary','From '+utcClock(b.t)+' to '+utcClock(b.t+tf*MIN)+' UTC, gold opened at '+usd(b.o)+' and closed at '+usd(b.c)+'. Its high–low range was '+usd(span)+' per ounce.');
+    $('details').innerHTML=[['Candle body',signed(body)+' USD'],['Body / range',span>0?(Math.abs(body)/span*100).toFixed(0)+'%':'—'],['ATR · 14 candles',fmt(a.atr)],['RSI · 14 candles',a.rsi===null?'—':a.rsi.toFixed(1)]].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');
+    setText('chartCaption',Math.min(windowSize,bars.length)+' closed M'+tf+' candles · UTC');
+  }else{setText('direction',feedError?'No candle data':'Waiting');setText('summary',feedError?'The chart now shows TradingView’s independent feed. Local indicator readings resume when confirmed candle data returns.':'Waiting for a completed M'+tf+' candle.');$('details').replaceChildren();setText('chartCaption','Times in UTC');}
+  $('comparison').innerHTML=[1,5].map(k=>{const v=last(market[k].bars);return '<tr><td>M'+k+'</td><td>'+(v?utcClock(v.t+k*MIN):'—')+'</td><td>'+fmt(v?.c)+'</td><td>'+(v?signed(v.c-v.o):'—')+'</td><td>'+(v?fmt(v.h-v.l):'—')+'</td></tr>';}).join('');
+  $('log').innerHTML=market[1].bars.length?market[1].bars.slice(-4).reverse().map(v=>'<div class="historyrow"><time>'+utcClock(v.t+MIN)+' UTC</time><span>'+fmt(v.c)+'</span><span class="'+(v.c>=v.o?'up':'down')+'">'+signed(v.c-v.o)+' body</span></div>').join(''):'<p class="meta">Waiting for completed minutes.</p>';
+  const backup=!!feedError&&!b,slot=$('backupFrame');
+  slot.hidden=!backup;$('chart').closest('.plot').hidden=backup;
+  $('ohlc').closest('.chartmeta').hidden=backup;
+  document.querySelector('.barcounts').hidden=backup;
+  if(backup){
+    setText('chartProvider','TradingView · ICE');
+    setText('chartCaption','TradingView reference · includes the forming candle');
+    setText('candleKind','Reference chart');
+    if(backupInterval!==tf){embedTV(slot,tf);backupInterval=tf;}
+  }else{
+    setText('candleKind','Closed candles');if(backupInterval){slot.replaceChildren();backupInterval=0;}
+  }
+  status();drawPlot();
+}
+function alignNext(){const time=nowServer(),boundary=(Math.floor((time-3500)/MIN)+1)*MIN+3500;nextCheck=performance.now()+Math.max(1000,boundary-time);}
+async function refreshMarket(){
+  if(fetching)return;fetching=true;lastFetch=performance.now();status();
+  const previous=endTime(1),priorM5=endTime(5),wasHealthy=!!previous&&!feedError;
+  try{
+    const full=!previous||!providerClock||nowServer()-previous>22*MIN;
+    const answer=await selectCandles(previous,full),sameSource=candleSource===answer.source;
+    if(sameSource&&seenCutoff&&answer.cutoff<seenCutoff)throw Error('Provider time moved backwards.');
+    providerClock={asOf:answer.asOf,at:answer.at};
+    seenCutoff=answer.cutoff;candleSource=answer.source;
+    const newest=last(answer.bars).t+MIN;
+    if(previous&&newest<previous)throw Error('An older feed response arrived.');
+    const oldest=answer.bars[0].t;
+    const old=answer.replace?[]:market[1].bars.filter(b=>b.t<oldest);
+    const minutes=old.concat(answer.bars).slice(-850);
+    market[1]={bars:minutes,metrics:measurements(minutes,MIN)};
+    const fives=groupFive(minutes);market[5]={bars:fives,metrics:measurements(fives,FIVE)};
+    feedError='';hover=null;
+    if(sameSource&&wasHealthy&&newest===previous+MIN&&nowServer()-newest<=20000)sendCloseNotice(previous,priorM5);
+  }catch(error){feedError=error.message||'Feed unavailable';}
+  finally{fetching=false;alignNext();paintMarket();}
+}
+const PREF='aurum-desk.monitor-alerts.v2';
+let pref=readLocal(PREF)||{interval:0,desktop:false};
+function notifyDesktop(title,text){
+  if(!window.isSecureContext||!('Notification' in window)||Notification.permission!=='granted')return false;
+  try{new Notification(title,{body:text,tag:'aurum-minute-monitor'});return true;}catch{return false;}
+}
+function sendCloseNotice(oldM1,oldM5){
+  const k=Number(pref.interval);if(![1,5].includes(k)||!freshness(k))return;
+  const end=endTime(k),previous=k===1?oldM1:oldM5;
+  if(!previous||end!==previous+k*MIN||nowServer()-end>20000)return;
+  const b=last(market[k].bars);
+  const msg='M'+k+' closed at '+fmt(b.c)+' USD/oz · Range '+fmt(b.h-b.l)+' · '+utcClock(end)+' UTC.';
+  const deliver=()=>{
+    const key='aurum-desk.alerted.'+k;if((readLocal(key)||0)>=end)return;
+    putLocal(key,end);showToast(msg);if(pref.desktop)notifyDesktop('XAUUSD candle closed',msg);
+  };
+  if(navigator.locks?.request)navigator.locks.request(PREF+'-dedupe',deliver).catch(()=>{});else deliver();
+}
+function alertUI(){
+  $('alertInterval').value=String(pref.interval||0);
+  const supported=window.isSecureContext&&'Notification' in window;
+  const allowed=supported&&Notification.permission==='granted',blocked=supported&&Notification.permission==='denied';
+  $('desktop').textContent=pref.desktop&&allowed?'Disable':'Enable';
+  $('desktop').disabled=!supported||blocked||!Number(pref.interval);
+  setText('desktopHint',!supported?'Use in-page alerts in this browser.':blocked?'Blocked by browser permissions. In-page alerts still work.':!Number(pref.interval)?'Choose M1 or M5 to enable delivery.':pref.desktop&&allowed?'Enabled on this browser.':'Optional on supported browsers.');
+}
+function savePref(){putLocal(PREF,pref);alertUI();}
+function installAlerts(){
+  $('alertOpen').onclick=()=>{setText('alertMsg','');alertUI();$('alertsDlg').showModal();};
+  $('dismiss').onclick=()=>$('alertsDlg').close();
+  $('alertInterval').onchange=e=>{pref.interval=Number(e.target.value);savePref();};
+  $('desktop').onclick=async()=>{
+    if(pref.desktop&&Notification.permission==='granted'){pref.desktop=false;savePref();return;}
+    try{const ok=await Notification.requestPermission();pref.desktop=ok==='granted'&&notifyDesktop('Aurum Desk','Desktop candle-close alerts enabled.');}
+    catch{pref.desktop=false;}savePref();setText('alertMsg',pref.desktop?'Desktop delivery enabled.':'Use in-page alerts for this browser.');
+  };
+  $('testAlert').onclick=()=>{if(!Number(pref.interval)){setText('alertMsg','Select M1 or M5 first.');return;}setText('alertMsg','Test received. Your selected interval is M'+pref.interval+'.');showToast('Test candle-close alert.');if(pref.desktop)notifyDesktop('Aurum Desk','Test candle-close alert.');};
+  window.addEventListener('storage',e=>{if(e.key===PREF){pref=readLocal(PREF)||{interval:0,desktop:false};alertUI();}});
+}
+const guide=[
+ ['Candle body','Close minus open','A positive value means the candle closed above its open. A negative value means it closed below. This describes that completed interval.'],
+ ['Candle range','High minus low','Range measures the full span in USD per ounce. Body divided by range shows how much of that span separates the open and close. A zero range leaves the ratio undefined.'],
+ ['EMA 9 / 21','Smoothed close','The gold line weights the last nine periods more heavily. The blue line uses a 21-period average. Each starts at the first close in a continuous run and appears after its stated warm-up.'],
+ ['RSI 14','Recent price changes','RSI compares Wilder-smoothed gains and losses on a 0–100 scale. It needs 14 consecutive close-to-close changes. Equal flat prices have a reading of 50.'],
+ ['ATR 14','Recent volatility','ATR averages true ranges with Wilder smoothing. True range includes the high–low span and the distance from the previous close. It describes the size of past swings in USD per ounce.'],
+ ['Feed checks','Timing and gaps','M1 is checked each minute. The latest M5 close changes every five minutes when all component bars exist. A dotted vertical line marks a break in the chart history.']
+];
+function embedTV(wrap,interval){
+  wrap.innerHTML='<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank" rel="noopener">XAUUSD chart</a> by TradingView</div></div>';
+  const script=document.createElement('script');script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';script.async=true;
+  script.textContent=JSON.stringify({autosize:true,symbol:'FX_IDC:XAUUSD',interval:String(interval),timezone:'Etc/UTC',theme:'dark',style:'1',locale:'en',backgroundColor:'#171a20',allow_symbol_change:false,hide_volume:true,hide_side_toolbar:true,save_image:false,withdateranges:true});
+  const slot=wrap.firstElementChild;script.onerror=()=>{const frame=slot.querySelector('.tradingview-widget-container__widget');if(frame)frame.textContent='The chart could not load. Use Open full chart.';};slot.appendChild(script);
+}
+function loadTV(interval){
+  if(tvBuilt===interval)return;
+  tvBuilt=tvTf=interval;embedTV($('marketFrame'),interval);
+  $('tvLink').href='https://www.tradingview.com/chart/?symbol=FX_IDC%3AXAUUSD&interval='+interval;
+  document.querySelectorAll('[data-tv]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.tv)===interval)));
+}
+function route(){
+  const hash=location.hash.slice(1);activePage=['practice','journal','guide','market'].includes(hash)?hash:'workspace';
+  document.querySelectorAll('[data-page]').forEach(el=>el.hidden=el.id!==activePage);
+  document.querySelectorAll('[data-nav]').forEach(el=>el.dataset.nav===activePage?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current'));
+  if(activePage==='market')loadTV(tvTf);
+  if(activePage==='workspace')requestAnimationFrame(drawPlot);
+  window.scrollTo(0,0);
+}
+function tick(){
+  maintainQuotes();status();if(performance.now()>=nextCheck&&!fetching)refreshMarket();
+  if(activePage==='practice'&&!document.hidden&&paper.future.length&&Date.now()>=paper.due)stepPaper(true);
+}
+$('guideCards').innerHTML=guide.map(([k,title,body])=>'<article class="guidecard"><div class="smallcap">'+k+'</div><h2>'+title+'</h2><p>'+body+'</p></article>').join('');
+document.querySelectorAll('[data-tv]').forEach(b=>b.onclick=()=>loadTV(Number(b.dataset.tv)));
+$('refresh').onclick=refreshMarket;window.addEventListener('hashchange',route);
+window.addEventListener('online',()=>{if(performance.now()-lastFetch>4000)refreshMarket();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&performance.now()-lastFetch>MIN-3000)refreshMarket();});
+initPaper();installAlerts();installPlot();renderPaper();route();paintMarket();maintainQuotes();refreshMarket();setInterval(tick,1000);
+</script></body></html>
