@@ -1,328 +1,1695 @@
-//@version=6
-strategy(
-     title                 = "Fast XAUUSD Scalp Pro v6 [M1/M5/M15]",
-     shorttitle            = "XAU Scalp Pro v6",
-     overlay               = true,
-     initial_capital       = 10000,
-     default_qty_type      = strategy.fixed,
-     default_qty_value     = 1,
-     currency              = currency.USD,
-     commission_type       = strategy.commission.cash_per_contract,
-     commission_value      = 0.0,
-     slippage              = 1,
-     pyramiding            = 0,
-     process_orders_on_close = true,
-     max_labels_count      = 150,
-     max_lines_count       = 60
- )
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurum Desk — Fast XAUUSD Scalp Pro</title>
+  <style>
+    :root {
+      --bg: #0c0e13;
+      --panel: #131720;
+      --panel-2: #181d28;
+      --border: #252c3b;
+      --text: #e6eaf2;
+      --muted: #8b95a8;
+      --gold: #eaca82;
+      --buy: #00c896;
+      --buy-soft: rgba(0, 200, 150, 0.16);
+      --sell: #ff4d6d;
+      --sell-soft: rgba(255, 77, 109, 0.16);
+      --wait: #d6a234;
+      --wait-soft: rgba(214, 162, 52, 0.16);
+      --tp2: #38bdf8;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
 
-// ============================================================================
-// 1. INPUTS
-// ============================================================================
-grpSpeed       = "1. Speed & Signal Sensitivity"
-speedMode      = input.string("Fast Scalp", "Scalp Speed Mode", options = ["Fast Scalp", "Balanced", "High Accuracy"], group = grpSpeed)
-fastLen        = input.int(9, "Fast EMA Length", minval = 2, group = grpSpeed)
-slowLen        = input.int(21, "Slow EMA Length", minval = 3, group = grpSpeed)
-stAtrLen       = input.int(10, "Supertrend ATR Length", minval = 2, group = grpSpeed)
-allowPullback  = input.bool(true, "Enable Trend Pullback Entries", group = grpSpeed)
-cooldownBars   = input.int(3, "Min Bars Between Same-Direction Signals", minval = 1, group = grpSpeed)
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow-x: hidden;
+    }
 
-grpFilter      = "2. Multi-Timeframe (M5 / M15) & Clarity Filters"
-useM5Filter    = input.bool(true, "Use M5 Confirmation Weight", group = grpFilter)
-useM15Filter   = input.bool(true, "Use M15 Trend Bias Filter", group = grpFilter)
-useAdxFilter   = input.bool(true, "ADX Chop Filter (Show WAIT in Sideways)", group = grpFilter)
-adxLen         = input.int(14, "ADX Length", minval = 5, group = grpFilter)
-rsiLen         = input.int(14, "RSI Length", minval = 5, group = grpFilter)
-minProbCustom  = input.int(60, "Min Entry Probability % (Balanced Reference)", minval = 52, maxval = 85, group = grpFilter)
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
 
-grpRisk        = "3. Stop Loss & Collect Profit Management"
-slAtrMult      = input.float(1.3, "Stop Loss (ATR Multiplier)", minval = 0.5, step = 0.1, group = grpRisk)
-tp1RR          = input.float(1.5, "TP1 Collect Profit (Risk : Reward)", minval = 0.5, step = 0.1, group = grpRisk)
-tp2RR          = input.float(2.5, "TP2 Runner Target (Risk : Reward)", minval = 1.0, step = 0.1, group = grpRisk)
-tp1ClosePct    = input.int(50, "TP1 Collect Profit Size (%)", minval = 10, maxval = 100, step = 10, group = grpRisk)
-moveBeOnTp1    = input.bool(true, "Auto Move Stop Loss to Break-Even at TP1", group = grpRisk)
-closeOnOpp     = input.bool(false, "Exit Early on Opposite Strong Signal", group = grpRisk)
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-grpVisual      = "4. Chart Visuals & Dashboard"
-showRibbon     = input.bool(true, "Show EMA 9/21 Scalp Ribbon", group = grpVisual)
-showRiskLines  = input.bool(true, "Plot Entry / SL / TP1 / TP2 Lines", group = grpVisual)
-showDashboard  = input.bool(true, "Show Live Signal & Probability HUD", group = grpVisual)
+    .logo {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.6px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
 
-// Mode-adjusted thresholds (Fast Scalp triggers quickest; High Accuracy filters hardest)
-stFactor = speedMode == "Fast Scalp" ? 1.4 : speedMode == "Balanced" ? 1.7 : 2.1
-adxMin   = speedMode == "Fast Scalp" ? 14.0 : speedMode == "Balanced" ? 18.0 : 22.0
-minProb  = speedMode == "Fast Scalp" ? math.max(56, minProbCustom - 4) : speedMode == "Balanced" ? minProbCustom : math.min(80, minProbCustom + 6)
-rsiHi    = speedMode == "Fast Scalp" ? 78.0 : 74.0
-rsiLo    = speedMode == "Fast Scalp" ? 22.0 : 26.0
+    .logo-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--buy);
+      box-shadow: 0 0 10px var(--buy);
+      animation: pulse 1.6s infinite;
+    }
 
-// ============================================================================
-// 2. CORE & MULTI-TIMEFRAME (M1 / M5 / M15) CALCULATIONS (NON-REPAINTING)
-// ============================================================================
-emaFast  = ta.ema(close, fastLen)
-emaSlow  = ta.ema(close, slowLen)
-emaTrend = ta.ema(close, 50)
-[stLine, stDir] = ta.supertrend(stFactor, stAtrLen)
-[_, _, adx]     = ta.dmi(adxLen, adxLen)
-rsi             = ta.rsi(close, rsiLen)
-atr             = math.max(ta.atr(14), syminfo.mintick * 10)
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
 
-// Reusable timeframe scorer (-1.0 to +1.0)
-f_tfScore() =>
-    _ef  = ta.ema(close, fastLen)
-    _es  = ta.ema(close, slowLen)
-    _rsi = ta.rsi(close, rsiLen)
-    _atr = math.max(ta.atr(14), syminfo.mintick * 10)
-    _sep = math.min(math.abs(_ef - _es) / _atr, 1.5)
-    _dir = _ef > _es ? 1.0 : _ef < _es ? -1.0 : 0.0
-    _mom = _rsi > 53 ? 0.35 : _rsi < 47 ? -0.35 : 0.0
-    _prc = close > _ef ? 0.20 : close < _ef ? -0.20 : 0.0
-    math.max(-1.0, math.min(1.0, _dir * (0.30 + _sep * 0.25) + _mom + _prc))
+    .price-ticker {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-family: var(--mono);
+    }
 
-// Fetch confirmed (closed-bar) M5 and M15 scores with zero lookahead / repainting
-m1ScoreRaw  = f_tfScore()
-m5ScoreRaw  = request.security(syminfo.tickerid, "5",  f_tfScore()[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_on)
-m15ScoreRaw = request.security(syminfo.tickerid, "15", f_tfScore()[1], gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_on)
+    .price-now {
+      font-size: 19px;
+      font-weight: 700;
+      color: #fff;
+    }
 
-m1Score  = nz(m1ScoreRaw, 0.0)
-m5Score  = nz(m5ScoreRaw, 0.0)
-m15Score = nz(m15ScoreRaw, 0.0)
+    .price-chg {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
 
-// Directional labels per timeframe
-f_biasText(float sc) =>
-    sc >= 0.20 ? "BULL" : sc <= -0.20 ? "BEAR" : "FLAT"
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
 
-m1Bias  = f_biasText(m1Score)
-m5Bias  = f_biasText(m5Score)
-m15Bias = f_biasText(m15Score)
+    .seg {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      overflow: hidden;
+    }
 
-// ============================================================================
-// 3. PROBABILITY ENGINE & MARKET CLARITY ("WAIT") LOGIC
-// ============================================================================
-// Candle body momentum contribution
-barRange = math.max(high - low, syminfo.mintick)
-bodyComp = math.max(-0.20, math.min(0.20, ((close - open) / barRange) * 0.20))
-stComp   = stDir < 0 ? 0.25 : -0.25
+    .seg button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
 
-wChart = 0.40
-wM5    = useM5Filter  ? 0.25 : 0.0
-wM15   = useM15Filter ? 0.15 : 0.0
-wSt    = 0.20
-wTotal = wChart + wM5 + wM15 + wSt
+    .seg button.active {
+      background: var(--panel-2);
+      color: var(--gold);
+    }
 
-composite = (m1Score * wChart + m5Score * wM5 + m15Score * wM15 + (stComp + bodyComp) * wSt) / wTotal
-buyProb   = math.round(math.max(5.0, math.min(95.0, 50.0 + composite * 46.0)))
-sellProb  = 100 - buyProb
-nextDir   = buyProb >= 50 ? "BUY" : "SELL"
-topProb   = math.max(buyProb, sellProb)
+    .seg button:hover:not(.active) {
+      color: var(--text);
+    }
 
-// Clarity guardrails
-isChoppy      = useAdxFilter and adx < adxMin
-m5ConflictB   = useM5Filter and m5Bias == "BEAR"
-m5ConflictS   = useM5Filter and m5Bias == "BULL"
-m15HardBlockB = useM15Filter and m15Bias == "BEAR" and buyProb < 72
-m15HardBlockS = useM15Filter and m15Bias == "BULL" and sellProb < 72
-rsiOverbought = rsi > rsiHi
-rsiOversold   = rsi < rsiLo
+    .btn {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
 
-// Fast scalping triggers
-stFlipBull   = stDir < 0 and nz(stDir[1], 1) > 0
-stFlipBear   = stDir > 0 and nz(stDir[1], -1) < 0
-emaCrossBull = ta.crossover(emaFast, emaSlow) and stDir < 0
-emaCrossBear = ta.crossunder(emaFast, emaSlow) and stDir > 0
-pullbackBull = allowPullback and stDir < 0 and emaFast > emaSlow and low <= emaFast and close > emaFast and close > open
-pullbackBear = allowPullback and stDir > 0 and emaFast < emaSlow and high >= emaFast and close < emaFast and close < open
-momBurstBull = speedMode == "Fast Scalp" and stDir < 0 and emaFast > emaSlow and close > high[1] and close > open and buyProb >= minProb + 4
-momBurstBear = speedMode == "Fast Scalp" and stDir > 0 and emaFast < emaSlow and close < low[1] and close < open and sellProb >= minProb + 4
+    .btn:hover { border-color: var(--gold); color: var(--gold); }
+    .btn.on { border-color: var(--buy); color: var(--buy); background: var(--buy-soft); }
 
-rawBuyTrig  = stFlipBull or emaCrossBull or pullbackBull or momBurstBull
-rawSellTrig = stFlipBear or emaCrossBear or pullbackBear or momBurstBear
+    select.btn { outline: none; }
 
-buyClear  = not isChoppy and not m5ConflictB and not m15HardBlockB and not rsiOverbought and buyProb >= minProb
-sellClear = not isChoppy and not m5ConflictS and not m15HardBlockS and not rsiOversold   and sellProb >= minProb
+    /* Main Grid */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      height: calc(100vh - 56px);
+      min-height: 580px;
+    }
 
-// Cooldown to avoid duplicate spam
-var int lastSigDir = 0
-var int lastSigBar = -1000
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
 
-canBuy  = rawBuyTrig  and buyClear  and barstate.isconfirmed and (lastSigDir != 1  or (bar_index - lastSigBar) >= cooldownBars)
-canSell = rawSellTrig and sellClear and barstate.isconfirmed and (lastSigDir != -1 or (bar_index - lastSigBar) >= cooldownBars)
+    /* Chart Side */
+    .chart-area {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      min-width: 0;
+      position: relative;
+    }
 
-if canBuy
-    lastSigDir := 1
-    lastSigBar := bar_index
-else if canSell
-    lastSigDir := -1
-    lastSigBar := bar_index
+    .chart-hud-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 14px;
+      background: rgba(19, 23, 32, 0.78);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
 
-// Explain why the market is WAIT if no active entry
-waitReason =
-     isChoppy                                ? "Choppy Market (ADX " + str.tostring(adx, "#.0") + " < " + str.tostring(adxMin, "#.0") + ")" :
-     (nextDir == "BUY" and m5ConflictB)      ? "M5 Bearish Conflict" :
-     (nextDir == "SELL" and m5ConflictS)     ? "M5 Bullish Conflict" :
-     (nextDir == "BUY" and m15HardBlockB)    ? "Counter-M15 Bear Trend" :
-     (nextDir == "SELL" and m15HardBlockS)   ? "Counter-M15 Bull Trend" :
-     (nextDir == "BUY" and rsiOverbought)    ? "RSI Overbought (" + str.tostring(rsi, "#.0") + ")" :
-     (nextDir == "SELL" and rsiOversold)     ? "RSI Oversold (" + str.tostring(rsi, "#.0") + ")" :
-     topProb < minProb                       ? "Low Probability (" + str.tostring(topProb) + "% < " + str.tostring(minProb) + "%)" :
-     "Waiting for Pullback / Trigger"
+    .hud-vals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
 
-// ============================================================================
-// 4. STRATEGY EXECUTION: ENTRY, STOP LOSS, COLLECT PROFIT (TP1 / TP2) & BE
-// ============================================================================
-swingLow5  = ta.lowest(low, 5)
-swingHigh5 = ta.highest(high, 5)
+    .hud-vals span b { color: var(--text); font-weight: 600; }
 
-var float trEntry = na
-var float trSL    = na
-var float trTP1   = na
-var float trTP2   = na
-var bool  tp1Done = false
-var int   trSide  = 0
+    .canvas-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 400px;
+      background: radial-gradient(circle at 20% 0%, #141925 0%, #0c0e13 65%);
+      overflow: hidden;
+    }
 
-// Optional early reversal exit
-if closeOnOpp and strategy.position_size > 0 and canSell
-    strategy.close("Long", comment = "Opp Signal Exit")
-if closeOnOpp and strategy.position_size < 0 and canBuy
-    strategy.close("Short", comment = "Opp Signal Exit")
+    canvas#chartCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
 
-// Open new Long
-if canBuy and strategy.position_size == 0
-    rawRisk  = math.max(atr * slAtrMult, close - swingLow5 + atr * 0.15)
-    riskDist = math.min(math.max(rawRisk, atr * 0.8), atr * 2.4)
-    trEntry := close
-    trSL    := close - riskDist
-    trTP1   := close + riskDist * tp1RR
-    trTP2   := close + riskDist * tp2RR
-    tp1Done := false
-    trSide  := 1
-    strategy.entry("Long", strategy.long, comment = "BUY " + str.tostring(buyProb) + "%")
-    alert("XAUUSD BUY SCALP (" + str.tostring(buyProb) + "%) | Entry: " + str.tostring(trEntry, format.mintick) + " | SL: " + str.tostring(trSL, format.mintick) + " | TP1: " + str.tostring(trTP1, format.mintick) + " | TP2: " + str.tostring(trTP2, format.mintick), alert.freq_once_per_bar_close)
+    .feed-badge {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      background: rgba(12, 14, 19, 0.78);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+    }
 
-// Open new Short
-if canSell and strategy.position_size == 0
-    rawRisk  = math.max(atr * slAtrMult, swingHigh5 - close + atr * 0.15)
-    riskDist = math.min(math.max(rawRisk, atr * 0.8), atr * 2.4)
-    trEntry := close
-    trSL    := close + riskDist
-    trTP1   := close - riskDist * tp1RR
-    trTP2   := close - riskDist * tp2RR
-    tp1Done := false
-    trSide  := -1
-    strategy.entry("Short", strategy.short, comment = "SELL " + str.tostring(sellProb) + "%")
-    alert("XAUUSD SELL SCALP (" + str.tostring(sellProb) + "%) | Entry: " + str.tostring(trEntry, format.mintick) + " | SL: " + str.tostring(trSL, format.mintick) + " | TP1: " + str.tostring(trTP1, format.mintick) + " | TP2: " + str.tostring(trTP2, format.mintick), alert.freq_once_per_bar_close)
+    /* Right Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      overflow-y: auto;
+      padding: 12px;
+      gap: 11px;
+    }
 
-// Manage Active Long (TP1 partial collect + auto Break-Even + TP2 runner)
-if strategy.position_size > 0
-    if not tp1Done and high >= trTP1
-        tp1Done := true
-        if moveBeOnTp1
-            trSL := math.max(trSL, strategy.position_avg_price)
-        alert("XAUUSD LONG TP1 COLLECT PROFIT HIT @ " + str.tostring(trTP1, format.mintick) + (moveBeOnTp1 ? " | SL moved to Break-Even" : ""), alert.freq_once_per_bar)
-    strategy.exit("Long TP1", from_entry = "Long", qty_percent = tp1ClosePct, limit = trTP1, stop = trSL, comment_profit = "Collect TP1", comment_loss = "Stop Loss")
-    strategy.exit("Long TP2", from_entry = "Long", qty_percent = 100,         limit = trTP2, stop = trSL, comment_profit = "Collect TP2", comment_loss = tp1Done and moveBeOnTp1 ? "BE Stop" : "Stop Loss")
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
 
-// Manage Active Short (TP1 partial collect + auto Break-Even + TP2 runner)
-if strategy.position_size < 0
-    if not tp1Done and low <= trTP1
-        tp1Done := true
-        if moveBeOnTp1
-            trSL := math.min(trSL, strategy.position_avg_price)
-        alert("XAUUSD SHORT TP1 COLLECT PROFIT HIT @ " + str.tostring(trTP1, format.mintick) + (moveBeOnTp1 ? " | SL moved to Break-Even" : ""), alert.freq_once_per_bar)
-    strategy.exit("Short TP1", from_entry = "Short", qty_percent = tp1ClosePct, limit = trTP1, stop = trSL, comment_profit = "Collect TP1", comment_loss = "Stop Loss")
-    strategy.exit("Short TP2", from_entry = "Short", qty_percent = 100,         limit = trTP2, stop = trSL, comment_profit = "Collect TP2", comment_loss = tp1Done and moveBeOnTp1 ? "BE Stop" : "Stop Loss")
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
 
-// Reset tracker when flat
-if strategy.position_size == 0 and not canBuy and not canSell
-    trSide := 0
+    /* Signal Banner */
+    .signal-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
 
-// ============================================================================
-// 5. CHART VISUALS: RIBBON, SIGNALS & DYNAMIC SL/TP LINES
-// ============================================================================
-ribCol = emaFast >= emaSlow ? #00c896 : #ff4d6d
-pFast  = plot(showRibbon ? emaFast  : na, "EMA 9",  color = color.new(ribCol, 20), linewidth = 1)
-pSlow  = plot(showRibbon ? emaSlow  : na, "EMA 21", color = color.new(ribCol, 20), linewidth = 1)
-fill(pFast, pSlow, color = showRibbon ? color.new(ribCol, 84) : na, title = "Scalp Ribbon")
-plot(emaTrend, "EMA 50 Trend", color = color.new(#eaca82, 45), linewidth = 2)
+    .signal-box.buy { background: var(--buy-soft); border-color: rgba(0, 200, 150, 0.45); }
+    .signal-box.sell { background: var(--sell-soft); border-color: rgba(255, 77, 109, 0.45); }
+    .signal-box.wait { background: var(--wait-soft); border-color: rgba(214, 162, 52, 0.45); }
 
-plotshape(canBuy,  title = "BUY Signal",  text = "BUY",  style = shape.labelup,   location = location.belowbar, color = #00c896, textcolor = color.white, size = size.small)
-plotshape(canSell, title = "SELL Signal", text = "SELL", style = shape.labeldown, location = location.abovebar, color = #ff4d6d, textcolor = color.white, size = size.small)
+    .sig-main {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .signal-box.buy .sig-main { color: var(--buy); }
+    .signal-box.sell .sig-main { color: var(--sell); }
+    .signal-box.wait .sig-main { color: var(--gold); }
 
-var line  lnEntry = na
-var line  lnSL    = na
-var line  lnTP1   = na
-var line  lnTP2   = na
-var label lbEntry = na
-var label lbSL    = na
-var label lbTP1   = na
-var label lbTP2   = na
+    .sig-sub {
+      font-size: 11.5px;
+      color: var(--text);
+      margin-top: 2px;
+      opacity: 0.9;
+    }
 
-if showRiskLines and (canBuy or canSell or strategy.position_size != 0)
-    if not na(lnEntry)
-        line.delete(lnEntry)
-        line.delete(lnSL)
-        line.delete(lnTP1)
-        line.delete(lnTP2)
-        label.delete(lbEntry)
-        label.delete(lbSL)
-        label.delete(lbTP1)
-        label.delete(lbTP2)
+    .sig-timer {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
 
-    x1 = bar_index
-    x2 = bar_index + 12
-    lnEntry := line.new(x1, trEntry, x2, trEntry, color = #eaca82, style = line.style_dotted, width = 1)
-    lnSL    := line.new(x1, trSL,    x2, trSL,    color = #ff4d6d, style = line.style_dashed, width = 1)
-    lnTP1   := line.new(x1, trTP1,   x2, trTP1,   color = #00c896, style = line.style_dashed, width = 1)
-    lnTP2   := line.new(x1, trTP2,   x2, trTP2,   color = #38bdf8, style = line.style_dashed, width = 1)
+    /* Probability Bar */
+    .prob-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
 
-    lbEntry := label.new(x2, trEntry, "ENTRY " + str.tostring(trEntry, format.mintick), style = label.style_label_left, color = color.new(#eaca82, 15), textcolor = color.black, size = size.tiny)
-    lbSL    := label.new(x2, trSL,    (tp1Done and moveBeOnTp1 ? "BE " : "SL ") + str.tostring(trSL, format.mintick), style = label.style_label_left, color = color.new(#ff4d6d, 15), textcolor = color.white, size = size.tiny)
-    lbTP1   := label.new(x2, trTP1,   "TP1 "   + str.tostring(trTP1, format.mintick), style = label.style_label_left, color = color.new(#00c896, 15), textcolor = color.white, size = size.tiny)
-    lbTP2   := label.new(x2, trTP2,   "TP2 "   + str.tostring(trTP2, format.mintick), style = label.style_label_left, color = color.new(#0284c7, 15), textcolor = color.white, size = size.tiny)
+    .prob-track {
+      height: 9px;
+      border-radius: 99px;
+      background: var(--sell);
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 10px;
+    }
 
-// ============================================================================
-// 6. REAL-TIME HUD DASHBOARD (SIGNAL, PROBABILITY, M1/M5/M15 & WAIT REASON)
-// ============================================================================
-var table hud = table.new(position.top_right, 2, 8, bgcolor = color.new(#111317, 10), border_color = #2d313a, border_width = 1, frame_color = #3b4049, frame_width = 1)
+    .prob-fill {
+      height: 100%;
+      background: var(--buy);
+      transition: width 0.25s ease;
+    }
 
-if showDashboard and barstate.islast
-    statusTxt =
-         canBuy or strategy.position_size > 0  ? (strategy.position_size > 0 ? "ACTIVE BUY"  : "BUY NOW") :
-         canSell or strategy.position_size < 0 ? (strategy.position_size < 0 ? "ACTIVE SELL" : "SELL NOW") :
-         "WAIT"
+    /* MTF Grid */
+    .mtf-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
 
-    statusBg =
-         str.contains(statusTxt, "BUY")  ? color.new(#00c896, 20) :
-         str.contains(statusTxt, "SELL") ? color.new(#ff4d6d, 20) :
-         color.new(#b88a28, 25)
+    .mtf-pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 6px;
+      text-align: center;
+    }
 
-    // Preview projected SL/TP even while waiting
-    projRisk = atr * slAtrMult
-    projDir  = nextDir == "BUY" ? 1 : -1
-    dispEnt  = strategy.position_size != 0 ? trEntry : close
-    dispSL   = strategy.position_size != 0 ? trSL    : close - projDir * projRisk
-    dispTP1  = strategy.position_size != 0 ? trTP1   : close + projDir * projRisk * tp1RR
-    dispTP2  = strategy.position_size != 0 ? trTP2   : close + projDir * projRisk * tp2RR
+    .mtf-tf {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 700;
+    }
 
-    table.cell(hud, 0, 0, "XAUUSD SCALP (" + speedMode + ")", text_color = #eaca82, text_size = size.small, bgcolor = #171a20, text_halign = text.align_left)
-    table.cell(hud, 1, 0, statusTxt, text_color = color.white, text_size = size.small, bgcolor = statusBg, text_halign = text.align_right)
+    .mtf-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
 
-    table.cell(hud, 0, 1, "Probability", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 1, "BUY " + str.tostring(buyProb) + "%  |  SELL " + str.tostring(sellProb) + "%", text_color = buyProb >= 50 ? #67d6b2 : #f39098, text_size = size.tiny, text_halign = text.align_right)
+    .bull { color: var(--buy); }
+    .bear { color: var(--sell); }
+    .flat { color: var(--gold); }
 
-    table.cell(hud, 0, 2, "Market Clarity", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 2, statusTxt == "WAIT" ? waitReason : "CLEAR (" + nextDir + " " + str.tostring(topProb) + "%)", text_color = statusTxt == "WAIT" ? #eaca82 : #67d6b2, text_size = size.tiny, text_halign = text.align_right)
+    /* Risk Levels Table */
+    .levels {
+      display: grid;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
 
-    table.cell(hud, 0, 3, "MTF Structure", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 3, "Chart: " + m1Bias + " | M5: " + m5Bias + " | M15: " + m15Bias, text_color = color.white, text_size = size.tiny, text_halign = text.align_right)
+    .lvl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--bg);
+      border-left: 3px solid var(--border);
+    }
 
-    table.cell(hud, 0, 4, strategy.position_size != 0 ? "Locked Entry" : "Next " + nextDir + " Est.", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 4, str.tostring(dispEnt, format.mintick), text_color = #eaca82, text_size = size.tiny, text_halign = text.align_right)
+    .lvl-row.entry { border-left-color: var(--gold); }
+    .lvl-row.sl    { border-left-color: var(--sell); }
+    .lvl-row.tp1   { border-left-color: var(--buy); }
+    .lvl-row.tp2   { border-left-color: var(--tp2); }
 
-    table.cell(hud, 0, 5, tp1Done and moveBeOnTp1 and strategy.position_size != 0 ? "Stop (Break-Even)" : "Stop Loss (SL)", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 5, str.tostring(dispSL, format.mintick), text_color = #ff4d6d, text_size = size.tiny, text_halign = text.align_right)
+    .lvl-name { color: var(--muted); font-family: var(--font); font-size: 11.5px; font-weight: 600; }
+    .lvl-price { font-weight: 700; color: #fff; }
 
-    table.cell(hud, 0, 6, "Collect Profit (TP1)", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 6, str.tostring(dispTP1, format.mintick) + " (" + str.tostring(tp1ClosePct) + "%)", text_color = #00c896, text_size = size.tiny, text_halign = text.align_right)
+    /* Trade Action Buttons */
+    .trade-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
 
-    table.cell(hud, 0, 7, "Runner Target (TP2)", text_color = #a9afbc, text_size = size.tiny, text_halign = text.align_left)
-    table.cell(hud, 1, 7, str.tostring(dispTP2, format.mintick), text_color = #38bdf8, text_size = size.tiny, text_halign = text.align_right)
+    .act-btn {
+      border: none;
+      border-radius: 7px;
+      padding: 9px 10px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      color: #0b0e13;
+      transition: opacity 0.15s;
+    }
+
+    .act-btn:hover { opacity: 0.9; }
+    .act-buy  { background: var(--buy); }
+    .act-sell { background: var(--sell); color: #fff; }
+    .act-flat { grid-column: span 2; background: #262e3f; color: var(--text); }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .stat-cell {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      text-align: center;
+    }
+
+    .stat-k { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .stat-v { font-family: var(--mono); font-size: 13px; font-weight: 800; margin-top: 2px; }
+
+    /* Log */
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 175px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 7px;
+      background: var(--bg);
+      border-radius: 5px;
+      border-left: 3px solid var(--border);
+    }
+
+    .log-item.buy  { border-left-color: var(--buy); }
+    .log-item.sell { border-left-color: var(--sell); }
+    .log-item.info { border-left-color: var(--gold); }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAVIGATION -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <span class="logo-dot" id="connDot"></span>
+        AURUM DESK · XAUUSD SCALP PRO
+      </div>
+      <div class="price-ticker">
+        <span class="price-now" id="livePrice">---</span>
+        <span class="price-chg" id="liveChg">0.00%</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <!-- Timeframe -->
+      <div class="seg" id="tfGroup">
+        <button data-tf="1" class="active">1m</button>
+        <button data-tf="3">3m</button>
+        <button data-tf="5">5m</button>
+      </div>
+
+      <!-- Speed Mode -->
+      <select id="speedMode" class="btn" title="Signal Speed Mode">
+        <option value="fast" selected>Mode: Fast Scalp</option>
+        <option value="balanced">Mode: Balanced</option>
+        <option value="strict">Mode: High Accuracy</option>
+      </select>
+
+      <!-- Feed Toggle -->
+      <select id="feedMode" class="btn" title="Market Data Source">
+        <option value="live" selected>Feed: Live Gold (PAXG)</option>
+        <option value="sim">Feed: Fast XAU Sim (4000)</option>
+      </select>
+
+      <!-- Auto Execute Signals -->
+      <button id="autoTradeBtn" class="btn on" title="Automatically track strategy entries & TP1/BE">Auto-Track: ON</button>
+
+      <!-- Sound Alerts -->
+      <button id="soundBtn" class="btn on" title="Audio signal chime">Sound: ON</button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace">
+    <!-- CHART PANEL -->
+    <section class="chart-area">
+      <div class="chart-hud-bar">
+        <div class="hud-vals" id="ohlcHud">
+          <span>O <b>--</b></span>
+          <span>H <b>--</b></span>
+          <span>L <b>--</b></span>
+          <span>C <b>--</b></span>
+          <span>EMA9 <b style="color:#00c896">--</b></span>
+          <span>EMA21 <b style="color:#ff4d6d">--</b></span>
+          <span>ADX <b>--</b></span>
+          <span>RSI <b>--</b></span>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn" id="zoomOutBtn" style="padding:2px 8px;">−</button>
+          <button class="btn" id="zoomInBtn" style="padding:2px 8px;">+</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="chartCanvas"></canvas>
+        <div class="feed-badge" id="feedStatus">Connecting to live gold feed...</div>
+      </div>
+    </section>
+
+    <!-- RIGHT SIGNAL DASHBOARD -->
+    <aside class="sidebar">
+      <!-- Signal & Clarity Card -->
+      <div class="card">
+        <div class="card-header">
+          <span>Live Scalp Signal</span>
+          <span id="clarityTag" style="color:var(--gold)">ANALYZING</span>
+        </div>
+
+        <div class="signal-box wait" id="signalBox">
+          <div>
+            <div class="sig-main" id="sigMain">WAIT</div>
+            <div class="sig-sub" id="sigReason">Loading candles...</div>
+          </div>
+          <div class="sig-timer" id="barTimer">00:00</div>
+        </div>
+
+        <div class="prob-labels">
+          <span class="bull">BUY <span id="buyProbTxt">50%</span></span>
+          <span class="bear">SELL <span id="sellProbTxt">50%</span></span>
+        </div>
+        <div class="prob-track">
+          <div class="prob-fill" id="probFill" style="width: 50%;"></div>
+        </div>
+
+        <div class="mtf-grid">
+          <div class="mtf-pill">
+            <div class="mtf-tf">CHART</div>
+            <div class="mtf-val flat" id="mtfChart">FLAT</div>
+          </div>
+          <div class="mtf-pill">
+            <div class="mtf-tf">M5 BIAS</div>
+            <div class="mtf-val flat" id="mtf5">FLAT</div>
+          </div>
+          <div class="mtf-pill">
+            <div class="mtf-tf">M15 BIAS</div>
+            <div class="mtf-val flat" id="mtf15">FLAT</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entry / SL / TP1 / TP2 Levels -->
+      <div class="card">
+        <div class="card-header">
+          <span id="levelsTitle">Projected Risk Levels</span>
+          <span id="posBadge" style="color:var(--muted)">FLAT</span>
+        </div>
+
+        <div class="levels">
+          <div class="lvl-row entry">
+            <span class="lvl-name" id="entryLbl">Entry Price</span>
+            <span class="lvl-price" id="lvlEntry">--</span>
+          </div>
+          <div class="lvl-row sl">
+            <span class="lvl-name" id="slLbl">Stop Loss (SL)</span>
+            <span class="lvl-price" id="lvlSL">--</span>
+          </div>
+          <div class="lvl-row tp1">
+            <span class="lvl-name">Collect Profit TP1 (50% + BE)</span>
+            <span class="lvl-price" id="lvlTP1">--</span>
+          </div>
+          <div class="lvl-row tp2">
+            <span class="lvl-name">Runner Target TP2 (2.5R)</span>
+            <span class="lvl-price" id="lvlTP2">--</span>
+          </div>
+        </div>
+
+        <div class="trade-btns">
+          <button class="act-btn act-buy" id="manualBuyBtn">SCALP BUY</button>
+          <button class="act-btn act-sell" id="manualSellBtn">SCALP SELL</button>
+          <button class="act-btn act-flat" id="closePosBtn" style="display:none;">CLOSE ACTIVE POSITION</button>
+        </div>
+      </div>
+
+      <!-- Session Performance -->
+      <div class="card">
+        <div class="card-header">
+          <span>Paper Scalp Stats</span>
+          <button class="btn" id="resetStatsBtn" style="padding:2px 7px; font-size:10px;">Reset</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-cell">
+            <div class="stat-k">Net P&amp;L</div>
+            <div class="stat-v" id="statPnl">$0.00</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-k">Win Rate</div>
+            <div class="stat-v" id="statWin">0%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-k">Trades</div>
+            <div class="stat-v" id="statTrades">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signal History Log -->
+      <div class="card" style="flex:1;">
+        <div class="card-header">
+          <span>Signal &amp; Execution Log</span>
+          <span id="logCount">0</span>
+        </div>
+        <div class="log-list" id="logList">
+          <div class="log-item info"><span>Engine initialized</span><span>READY</span></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+<script>
+(() => {
+  // =========================================================================
+  // 1. STATE & CONFIGURATION
+  // =========================================================================
+  const state = {
+    tf: 1,                  // 1, 3, or 5 minutes
+    speedMode: 'fast',      // 'fast' | 'balanced' | 'strict'
+    feedMode: 'live',       // 'live' | 'sim'
+    autoTrack: true,
+    soundOn: true,
+    visibleBars: 85,
+    candles1m: [],          // Base 1-minute OHLCV history
+    bars: [],               // Aggregated candles for selected TF
+    indicators: null,       // Latest computed indicator arrays
+    signals: [],            // { idx, side: 'BUY'|'SELL', prob, price }
+    position: null,         // Active scalp position
+    stats: { pnl: 0, wins: 0, losses: 0, trades: 0 },
+    logs: [],
+    hoverIdx: -1,
+    ws: null,
+    simTimer: null,
+    lastSigBarTime: 0,
+    lastSigSide: null,
+    lastTickPrice: 4001.87,
+    openDayPrice: 4001.87
+  };
+
+  const MODE_CFG = {
+    fast:     { stFactor: 1.4, adxMin: 14, minProb: 56, rsiHi: 78, rsiLo: 22, slMult: 1.3, tp1RR: 1.5, tp2RR: 2.5, cooldown: 3 },
+    balanced: { stFactor: 1.7, adxMin: 18, minProb: 60, rsiHi: 74, rsiLo: 26, slMult: 1.4, tp1RR: 1.5, tp2RR: 2.5, cooldown: 4 },
+    strict:   { stFactor: 2.1, adxMin: 22, minProb: 66, rsiHi: 72, rsiLo: 28, slMult: 1.5, tp1RR: 1.6, tp2RR: 2.8, cooldown: 5 }
+  };
+
+  // DOM Elements
+  const el = {
+    canvas: document.getElementById('chartCanvas'),
+    wrap: document.getElementById('canvasWrap'),
+    livePrice: document.getElementById('livePrice'),
+    liveChg: document.getElementById('liveChg'),
+    connDot: document.getElementById('connDot'),
+    feedStatus: document.getElementById('feedStatus'),
+    ohlcHud: document.getElementById('ohlcHud'),
+    signalBox: document.getElementById('signalBox'),
+    sigMain: document.getElementById('sigMain'),
+    sigReason: document.getElementById('sigReason'),
+    clarityTag: document.getElementById('clarityTag'),
+    barTimer: document.getElementById('barTimer'),
+    buyProbTxt: document.getElementById('buyProbTxt'),
+    sellProbTxt: document.getElementById('sellProbTxt'),
+    probFill: document.getElementById('probFill'),
+    mtfChart: document.getElementById('mtfChart'),
+    mtf5: document.getElementById('mtf5'),
+    mtf15: document.getElementById('mtf15'),
+    levelsTitle: document.getElementById('levelsTitle'),
+    posBadge: document.getElementById('posBadge'),
+    entryLbl: document.getElementById('entryLbl'),
+    slLbl: document.getElementById('slLbl'),
+    lvlEntry: document.getElementById('lvlEntry'),
+    lvlSL: document.getElementById('lvlSL'),
+    lvlTP1: document.getElementById('lvlTP1'),
+    lvlTP2: document.getElementById('lvlTP2'),
+    closePosBtn: document.getElementById('closePosBtn'),
+    statPnl: document.getElementById('statPnl'),
+    statWin: document.getElementById('statWin'),
+    statTrades: document.getElementById('statTrades'),
+    logList: document.getElementById('logList'),
+    logCount: document.getElementById('logCount')
+  };
+
+  const ctx = el.canvas.getContext('2d');
+
+  // =========================================================================
+  // 2. AUDIO ALERT ENGINE (Web Audio API — zero external assets)
+  // =========================================================================
+  let audioCtx = null;
+  function playTone(type) {
+    if (!state.soundOn) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const notes = type === 'buy'  ? [523.25, 659.25, 783.99]
+                  : type === 'sell' ? [659.25, 523.25, 392.00]
+                  : [880, 1174.66];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.08);
+        gain.gain.setValueAtTime(0.08, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.16);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.17);
+      });
+    } catch (_) {}
+  }
+
+  // =========================================================================
+  // 3. TECHNICAL INDICATOR LIBRARY (MATCHES PINE SCRIPT v6 LOGIC)
+  // =========================================================================
+  function calcEMA(values, len) {
+    const out = new Array(values.length).fill(0);
+    if (!values.length) return out;
+    const k = 2 / (len + 1);
+    out[0] = values[0];
+    for (let i = 1; i < values.length; i++) {
+      out[i] = values[i] * k + out[i - 1] * (1 - k);
+    }
+    return out;
+  }
+
+  function calcATR(bars, len = 14) {
+    const out = new Array(bars.length).fill(0);
+    if (!bars.length) return out;
+    let prevAtr = bars[0].h - bars[0].l;
+    out[0] = prevAtr;
+    for (let i = 1; i < bars.length; i++) {
+      const tr = Math.max(
+        bars[i].h - bars[i].l,
+        Math.abs(bars[i].h - bars[i - 1].c),
+        Math.abs(bars[i].l - bars[i - 1].c)
+      );
+      prevAtr = i < len ? ((prevAtr * i) + tr) / (i + 1) : ((prevAtr * (len - 1)) + tr) / len;
+      out[i] = Math.max(prevAtr, 0.05);
+    }
+    return out;
+  }
+
+  function calcRSI(closes, len = 14) {
+    const out = new Array(closes.length).fill(50);
+    if (closes.length < 2) return out;
+    let avgGain = 0, avgLoss = 0;
+    for (let i = 1; i < closes.length; i++) {
+      const diff = closes[i] - closes[i - 1];
+      const gain = diff > 0 ? diff : 0;
+      const loss = diff < 0 ? -diff : 0;
+      if (i <= len) {
+        avgGain += gain / len;
+        avgLoss += loss / len;
+      } else {
+        avgGain = (avgGain * (len - 1) + gain) / len;
+        avgLoss = (avgLoss * (len - 1) + loss) / len;
+      }
+      if (i >= len) {
+        out[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+      }
+    }
+    return out;
+  }
+
+  function calcADX(bars, len = 14) {
+    const n = bars.length;
+    const adx = new Array(n).fill(20);
+    if (n < len + 2) return adx;
+    let smTR = 0, smPDM = 0, smMDM = 0;
+    const dxArr = new Array(n).fill(20);
+
+    for (let i = 1; i < n; i++) {
+      const upMove = bars[i].h - bars[i - 1].h;
+      const downMove = bars[i - 1].l - bars[i].l;
+      const pdm = (upMove > downMove && upMove > 0) ? upMove : 0;
+      const mdm = (downMove > upMove && downMove > 0) ? downMove : 0;
+      const tr = Math.max(
+        bars[i].h - bars[i].l,
+        Math.abs(bars[i].h - bars[i - 1].c),
+        Math.abs(bars[i].l - bars[i - 1].c)
+      );
+
+      if (i <= len) {
+        smTR += tr; smPDM += pdm; smMDM += mdm;
+      } else {
+        smTR = smTR - smTR / len + tr;
+        smPDM = smPDM - smPDM / len + pdm;
+        smMDM = smMDM - smMDM / len + mdm;
+      }
+      const pdi = smTR > 0 ? (100 * smPDM / smTR) : 0;
+      const mdi = smTR > 0 ? (100 * smMDM / smTR) : 0;
+      const sum = pdi + mdi;
+      dxArr[i] = sum > 0 ? (100 * Math.abs(pdi - mdi) / sum) : 0;
+
+      if (i === len * 2) {
+        let s = 0;
+        for (let j = len + 1; j <= len * 2; j++) s += dxArr[j];
+        adx[i] = s / len;
+      } else if (i > len * 2) {
+        adx[i] = ((adx[i - 1] * (len - 1)) + dxArr[i]) / len;
+      } else {
+        adx[i] = dxArr[i];
+      }
+    }
+    return adx;
+  }
+
+  function calcSupertrend(bars, factor, atrLen = 10) {
+    const n = bars.length;
+    const atr = calcATR(bars, atrLen);
+    const dir = new Array(n).fill(-1); // -1 = bull, +1 = bear (Pine convention)
+    const line = new Array(n).fill(0);
+    const fUpper = new Array(n).fill(0);
+    const fLower = new Array(n).fill(0);
+
+    for (let i = 0; i < n; i++) {
+      const hl2 = (bars[i].h + bars[i].l) / 2;
+      const bUpper = hl2 + factor * atr[i];
+      const bLower = hl2 - factor * atr[i];
+
+      if (i === 0) {
+        fUpper[i] = bUpper;
+        fLower[i] = bLower;
+        dir[i] = -1;
+        line[i] = fLower[i];
+        continue;
+      }
+
+      fUpper[i] = (bUpper < fUpper[i - 1] || bars[i - 1].c > fUpper[i - 1]) ? bUpper : fUpper[i - 1];
+      fLower[i] = (bLower > fLower[i - 1] || bars[i - 1].c < fLower[i - 1]) ? bLower : fLower[i - 1];
+
+      if (dir[i - 1] === 1) {
+        dir[i] = bars[i].c > fUpper[i] ? -1 : 1;
+      } else {
+        dir[i] = bars[i].c < fLower[i] ? 1 : -1;
+      }
+      line[i] = dir[i] === -1 ? fLower[i] : fUpper[i];
+    }
+    return { line, dir };
+  }
+
+  function aggregateBars(candles1m, tfMinutes) {
+    if (tfMinutes === 1) return candles1m.map(c => ({ ...c }));
+    const bucketMs = tfMinutes * 60 * 1000;
+    const out = [];
+    for (const c of candles1m) {
+      const bt = Math.floor(c.t / bucketMs) * bucketMs;
+      const last = out[out.length - 1];
+      if (!last || last.t !== bt) {
+        out.push({ t: bt, o: c.o, h: c.h, l: c.l, c: c.c });
+      } else {
+        last.h = Math.max(last.h, c.h);
+        last.l = Math.min(last.l, c.l);
+        last.c = c.c;
+      }
+    }
+    return out;
+  }
+
+  function calcTfScore(bars, useClosedOnly = true) {
+    if (bars.length < 25) return 0;
+    const idx = useClosedOnly ? bars.length - 2 : bars.length - 1;
+    const closes = bars.map(b => b.c);
+    const ef = calcEMA(closes, 9)[idx];
+    const es = calcEMA(closes, 21)[idx];
+    const rsi = calcRSI(closes, 14)[idx];
+    const atr = calcATR(bars, 14)[idx];
+    const sep = Math.min(Math.abs(ef - es) / Math.max(atr, 0.05), 1.5);
+    const dir = ef > es ? 1 : ef < es ? -1 : 0;
+    const mom = rsi > 53 ? 0.35 : rsi < 47 ? -0.35 : 0;
+    const prc = bars[idx].c > ef ? 0.20 : bars[idx].c < ef ? -0.20 : 0;
+    return Math.max(-1, Math.min(1, dir * (0.30 + sep * 0.25) + mom + prc));
+  }
+
+  function biasLabel(score) {
+    return score >= 0.20 ? 'BULL' : score <= -0.20 ? 'BEAR' : 'FLAT';
+  }
+
+  // =========================================================================
+  // 4. SIGNAL ENGINE & STRATEGY TRACKER
+  // =========================================================================
+  function runAnalysis(isNewBarClose = false) {
+    if (state.candles1m.length < 40) return;
+
+    const cfg = MODE_CFG[state.speedMode];
+    state.bars = aggregateBars(state.candles1m, state.tf);
+    const bars = state.bars;
+    const n = bars.length;
+    const closes = bars.map(b => b.c);
+
+    const ema9 = calcEMA(closes, 9);
+    const ema21 = calcEMA(closes, 21);
+    const ema50 = calcEMA(closes, 50);
+    const atr = calcATR(bars, 14);
+    const rsi = calcRSI(closes, 14);
+    const adx = calcADX(bars, 14);
+    const st = calcSupertrend(bars, cfg.stFactor, 10);
+
+    // Non-repainting M5 & M15 closed-bar scores
+    const m5Bars = aggregateBars(state.candles1m, 5);
+    const m15Bars = aggregateBars(state.candles1m, 15);
+    const m5Score = calcTfScore(m5Bars, true);
+    const m15Score = calcTfScore(m15Bars, true);
+    const m5Bias = biasLabel(m5Score);
+    const m15Bias = biasLabel(m15Score);
+
+    // Historical signals scan (closed bars) + live evaluation on latest bar
+    const signals = [];
+    let lastDir = 0;
+    let lastIdx = -999;
+
+    for (let i = 25; i < n; i++) {
+      const sep = Math.min(Math.abs(ema9[i] - ema21[i]) / Math.max(atr[i], 0.05), 1.5);
+      const cDir = ema9[i] > ema21[i] ? 1 : -1;
+      const mom = rsi[i] > 53 ? 0.35 : rsi[i] < 47 ? -0.35 : 0;
+      const prc = bars[i].c > ema9[i] ? 0.20 : -0.20;
+      const cScore = Math.max(-1, Math.min(1, cDir * (0.30 + sep * 0.25) + mom + prc));
+
+      const barRange = Math.max(bars[i].h - bars[i].l, 0.05);
+      const bodyComp = Math.max(-0.20, Math.min(0.20, ((bars[i].c - bars[i].o) / barRange) * 0.20));
+      const stComp = st.dir[i] < 0 ? 0.25 : -0.25;
+
+      // Blend chart + MTF (on historical bars use EMA50 proxy for smooth history; on recent bars use live M5/M15)
+      const histM5 = i >= n - 3 ? m5Score : (bars[i].c > ema50[i] ? 0.45 : -0.45);
+      const histM15 = i >= n - 3 ? m15Score : (ema21[i] > ema50[i] ? 0.40 : -0.40);
+      const composite = cScore * 0.40 + histM5 * 0.25 + histM15 * 0.15 + (stComp + bodyComp) * 0.20;
+      const buyProb = Math.round(Math.max(5, Math.min(95, 50 + composite * 46)));
+      const sellProb = 100 - buyProb;
+
+      const isChop = adx[i] < cfg.adxMin;
+      const stFlipB = st.dir[i] < 0 && st.dir[i - 1] > 0;
+      const stFlipS = st.dir[i] > 0 && st.dir[i - 1] < 0;
+      const crossB = ema9[i] > ema21[i] && ema9[i - 1] <= ema21[i - 1] && st.dir[i] < 0;
+      const crossS = ema9[i] < ema21[i] && ema9[i - 1] >= ema21[i - 1] && st.dir[i] > 0;
+      const pbB = st.dir[i] < 0 && ema9[i] > ema21[i] && bars[i].l <= ema9[i] && bars[i].c > ema9[i] && bars[i].c > bars[i].o;
+      const pbS = st.dir[i] > 0 && ema9[i] < ema21[i] && bars[i].h >= ema9[i] && bars[i].c < ema9[i] && bars[i].c < bars[i].o;
+      const burstB = state.speedMode === 'fast' && st.dir[i] < 0 && ema9[i] > ema21[i] && bars[i].c > bars[i - 1].h && bars[i].c > bars[i].o && buyProb >= cfg.minProb + 4;
+      const burstS = state.speedMode === 'fast' && st.dir[i] > 0 && ema9[i] < ema21[i] && bars[i].c < bars[i - 1].l && bars[i].c < bars[i].o && sellProb >= cfg.minProb + 4;
+
+      const m5OkB = biasLabel(histM5) !== 'BEAR';
+      const m5OkS = biasLabel(histM5) !== 'BULL';
+      const m15OkB = !(biasLabel(histM15) === 'BEAR' && buyProb < 72);
+      const m15OkS = !(biasLabel(histM15) === 'BULL' && sellProb < 72);
+
+      const canB = (stFlipB || crossB || pbB || burstB) && !isChop && m5OkB && m15OkB && rsi[i] <= cfg.rsiHi && buyProb >= cfg.minProb;
+      const canS = (stFlipS || crossS || pbS || burstS) && !isChop && m5OkS && m15OkS && rsi[i] >= cfg.rsiLo && sellProb >= cfg.minProb;
+
+      // Only lock confirmed closed bars (i < n - 1) onto the historical signal array
+      if (i < n - 1) {
+        if (canB && (lastDir !== 1 || i - lastIdx >= cfg.cooldown)) {
+          signals.push({ idx: i, time: bars[i].t, side: 'BUY', prob: buyProb, price: bars[i].c });
+          lastDir = 1; lastIdx = i;
+        } else if (canS && (lastDir !== -1 || i - lastIdx >= cfg.cooldown)) {
+          signals.push({ idx: i, time: bars[i].t, side: 'SELL', prob: sellProb, price: bars[i].c });
+          lastDir = -1; lastIdx = i;
+        }
+      }
+    }
+
+    // Current live bar metrics (index n - 1)
+    const i = n - 1;
+    const cScore = calcTfScore(bars, false);
+    const chartBias = biasLabel(cScore);
+    const barRange = Math.max(bars[i].h - bars[i].l, 0.05);
+    const bodyComp = Math.max(-0.20, Math.min(0.20, ((bars[i].c - bars[i].o) / barRange) * 0.20));
+    const stComp = st.dir[i] < 0 ? 0.25 : -0.25;
+    const composite = cScore * 0.40 + m5Score * 0.25 + m15Score * 0.15 + (stComp + bodyComp) * 0.20;
+    const buyProb = Math.round(Math.max(5, Math.min(95, 50 + composite * 46)));
+    const sellProb = 100 - buyProb;
+    const nextDir = buyProb >= 50 ? 'BUY' : 'SELL';
+    const topProb = Math.max(buyProb, sellProb);
+
+    const isChoppy = adx[i] < cfg.adxMin;
+    const m5ConflictB = m5Bias === 'BEAR';
+    const m5ConflictS = m5Bias === 'BULL';
+    const m15HardB = m15Bias === 'BEAR' && buyProb < 72;
+    const m15HardS = m15Bias === 'BULL' && sellProb < 72;
+    const rsiOB = rsi[i] > cfg.rsiHi;
+    const rsiOS = rsi[i] < cfg.rsiLo;
+
+    let waitReason = 'Waiting for Pullback / Trigger';
+    if (isChoppy) waitReason = `Choppy Market (ADX ${adx[i].toFixed(1)} < ${cfg.adxMin})`;
+    else if (nextDir === 'BUY' && m5ConflictB) waitReason = 'M5 Bearish Conflict';
+    else if (nextDir === 'SELL' && m5ConflictS) waitReason = 'M5 Bullish Conflict';
+    else if (nextDir === 'BUY' && m15HardB) waitReason = 'Counter-M15 Bear Trend';
+    else if (nextDir === 'SELL' && m15HardS) waitReason = 'Counter-M15 Bull Trend';
+    else if (nextDir === 'BUY' && rsiOB) waitReason = `RSI Overbought (${rsi[i].toFixed(0)})`;
+    else if (nextDir === 'SELL' && rsiOS) waitReason = `RSI Oversold (${rsi[i].toFixed(0)})`;
+    else if (topProb < cfg.minProb) waitReason = `Low Probability (${topProb}% < ${cfg.minProb}%)`;
+
+    // Check if the just-closed bar produced a fresh signal
+    const latestSig = signals[signals.length - 1];
+    if (isNewBarClose && latestSig && latestSig.idx === n - 2 && latestSig.time !== state.lastSigBarTime) {
+      state.lastSigBarTime = latestSig.time;
+      state.lastSigSide = latestSig.side;
+      addLog(`${latestSig.side} SIGNAL (${latestSig.prob}%) @ ${latestSig.price.toFixed(2)}`, latestSig.side.toLowerCase());
+      playTone(latestSig.side.toLowerCase());
+      if (state.autoTrack && !state.position) {
+        openPosition(latestSig.side, bars[n - 1].c, atr[n - 1], latestSig.prob);
+      }
+    }
+
+    state.signals = signals;
+    state.indicators = {
+      ema9, ema21, ema50, atr, rsi, adx, st,
+      buyProb, sellProb, nextDir, topProb, waitReason,
+      chartBias, m5Bias, m15Bias, latestSig
+    };
+
+    managePosition(bars[i].c, bars[i].h, bars[i].l);
+    updateDashboard();
+    drawChart();
+  }
+
+  // =========================================================================
+  // 5. POSITION MANAGER (SL + TP1 COLLECT PROFIT + AUTO BREAK-EVEN + TP2)
+  // =========================================================================
+  function calcRiskLevels(side, entry, atrVal) {
+    const cfg = MODE_CFG[state.speedMode];
+    const bars = state.bars;
+    const slice = bars.slice(-5);
+    const swingLow = Math.min(...slice.map(b => b.l));
+    const swingHigh = Math.max(...slice.map(b => b.h));
+    const rawRisk = side === 'BUY'
+      ? Math.max(atrVal * cfg.slMult, entry - swingLow + atrVal * 0.15)
+      : Math.max(atrVal * cfg.slMult, swingHigh - entry + atrVal * 0.15);
+    const risk = Math.min(Math.max(rawRisk, atrVal * 0.8), atrVal * 2.4);
+
+    if (side === 'BUY') {
+      return {
+        entry,
+        sl: entry - risk,
+        tp1: entry + risk * cfg.tp1RR,
+        tp2: entry + risk * cfg.tp2RR,
+        risk
+      };
+    }
+    return {
+      entry,
+      sl: entry + risk,
+      tp1: entry - risk * cfg.tp1RR,
+      tp2: entry - risk * cfg.tp2RR,
+      risk
+    };
+  }
+
+  function openPosition(side, price, atrVal, prob = 65) {
+    const lvls = calcRiskLevels(side, price, atrVal || 1.2);
+    state.position = {
+      side,
+      entry: lvls.entry,
+      sl: lvls.sl,
+      tp1: lvls.tp1,
+      tp2: lvls.tp2,
+      tp1Hit: false,
+      beActive: false,
+      size: 1.0, // 1 oz / unit scale (10x multiplier for readable USD PnL on gold scalps)
+      realized: 0,
+      prob
+    };
+    addLog(`ENTER ${side} @ ${lvls.entry.toFixed(2)} | SL ${lvls.sl.toFixed(2)}`, side.toLowerCase());
+    updateDashboard();
+    drawChart();
+  }
+
+  function managePosition(price, high, low) {
+    const pos = state.position;
+    if (!pos) return;
+    const mult = 10; // 0.10 lot XAUUSD ($10 per $1 gold move)
+
+    if (pos.side === 'BUY') {
+      // TP1 partial collect (50%) + move SL to Break-Even
+      if (!pos.tp1Hit && high >= pos.tp1) {
+        pos.tp1Hit = true;
+        pos.beActive = true;
+        pos.realized += (pos.tp1 - pos.entry) * 0.5 * mult;
+        pos.size = 0.5;
+        pos.sl = pos.entry;
+        addLog(`TP1 COLLECTED +$${pos.realized.toFixed(2)} | SL → BE`, 'buy');
+        playTone('tp');
+      }
+      // TP2 full runner exit
+      if (high >= pos.tp2) {
+        const runnerPnl = (pos.tp2 - pos.entry) * pos.size * mult;
+        finalizePosition(pos.realized + runnerPnl, 'TP2 RUNNER HIT');
+        return;
+      }
+      // SL or Break-Even hit
+      if (low <= pos.sl) {
+        const remPnl = (pos.sl - pos.entry) * pos.size * mult;
+        finalizePosition(pos.realized + remPnl, pos.beActive ? 'BREAK-EVEN EXIT' : 'STOP LOSS HIT');
+      }
+    } else {
+      if (!pos.tp1Hit && low <= pos.tp1) {
+        pos.tp1Hit = true;
+        pos.beActive = true;
+        pos.realized += (pos.entry - pos.tp1) * 0.5 * mult;
+        pos.size = 0.5;
+        pos.sl = pos.entry;
+        addLog(`TP1 COLLECTED +$${pos.realized.toFixed(2)} | SL → BE`, 'sell');
+        playTone('tp');
+      }
+      if (low <= pos.tp2) {
+        const runnerPnl = (pos.entry - pos.tp2) * pos.size * mult;
+        finalizePosition(pos.realized + runnerPnl, 'TP2 RUNNER HIT');
+        return;
+      }
+      if (high >= pos.sl) {
+        const remPnl = (pos.entry - pos.sl) * pos.size * mult;
+        finalizePosition(pos.realized + remPnl, pos.beActive ? 'BREAK-EVEN EXIT' : 'STOP LOSS HIT');
+      }
+    }
+  }
+
+  function closePositionManual() {
+    const pos = state.position;
+    if (!pos) return;
+    const mult = 10;
+    const diff = pos.side === 'BUY' ? (state.lastTickPrice - pos.entry) : (pos.entry - state.lastTickPrice);
+    finalizePosition(pos.realized + diff * pos.size * mult, 'MANUAL CLOSE');
+  }
+
+  function finalizePosition(totalPnl, reason) {
+    state.stats.trades += 1;
+    state.stats.pnl += totalPnl;
+    if (totalPnl >= 0) state.stats.wins += 1;
+    else state.stats.losses += 1;
+    addLog(`${reason} (${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)})`, totalPnl >= 0 ? 'buy' : 'sell');
+    state.position = null;
+    updateDashboard();
+    drawChart();
+  }
+
+  function addLog(msg, cls = 'info') {
+    const now = new Date();
+    const ts = now.toTimeString().slice(0, 8);
+    state.logs.unshift({ msg, cls, ts });
+    if (state.logs.length > 35) state.logs.pop();
+    el.logCount.textContent = state.logs.length;
+    el.logList.innerHTML = state.logs
+      .map(l => `<div class="log-item ${l.cls}"><span>${l.msg}</span><span style="color:var(--muted)">${l.ts}</span></div>`)
+      .join('');
+  }
+
+  // =========================================================================
+  // 6. UI DASHBOARD UPDATES
+  // =========================================================================
+  function updateDashboard() {
+    const ind = state.indicators;
+    if (!ind || !state.bars.length) return;
+    const lastBar = state.bars[state.bars.length - 1];
+    const price = lastBar.c;
+
+    // Header ticker
+    el.livePrice.textContent = price.toFixed(2);
+    const pct = ((price - state.openDayPrice) / state.openDayPrice) * 100;
+    el.liveChg.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    el.liveChg.style.background = pct >= 0 ? 'var(--buy-soft)' : 'var(--sell-soft)';
+    el.liveChg.style.color = pct >= 0 ? 'var(--buy)' : 'var(--sell)';
+
+    // Probability meter
+    el.buyProbTxt.textContent = `${ind.buyProb}%`;
+    el.sellProbTxt.textContent = `${ind.sellProb}%`;
+    el.probFill.style.width = `${ind.buyProb}%`;
+
+    // MTF pills
+    const setBias = (node, b) => {
+      node.textContent = b;
+      node.className = 'mtf-val ' + (b === 'BULL' ? 'bull' : b === 'BEAR' ? 'bear' : 'flat');
+    };
+    setBias(el.mtfChart, ind.chartBias);
+    setBias(el.mtf5, ind.m5Bias);
+    setBias(el.mtf15, ind.m15Bias);
+
+    // Signal Box & Clarity
+    const pos = state.position;
+    const recentFresh = ind.latestSig && (state.bars.length - 2 - ind.latestSig.idx) <= 1;
+
+    if (pos) {
+      const mult = 10;
+      const openPnl = (pos.side === 'BUY' ? (price - pos.entry) : (pos.entry - price)) * pos.size * mult + pos.realized;
+      el.signalBox.className = `signal-box ${pos.side.toLowerCase()}`;
+      el.sigMain.textContent = `ACTIVE ${pos.side}`;
+      el.sigReason.textContent = `Live P&L: ${openPnl >= 0 ? '+' : ''}$${openPnl.toFixed(2)}${pos.beActive ? ' · BE Protected' : ''}`;
+      el.clarityTag.textContent = 'IN TRADE';
+      el.clarityTag.style.color = pos.side === 'BUY' ? 'var(--buy)' : 'var(--sell)';
+    } else if (recentFresh) {
+      const s = ind.latestSig;
+      el.signalBox.className = `signal-box ${s.side.toLowerCase()}`;
+      el.sigMain.textContent = `${s.side} NOW`;
+      el.sigReason.textContent = `Confirmed ${s.prob}% setup @ ${s.price.toFixed(2)}`;
+      el.clarityTag.textContent = 'CLEAR SETUP';
+      el.clarityTag.style.color = s.side === 'BUY' ? 'var(--buy)' : 'var(--sell)';
+    } else {
+      el.signalBox.className = 'signal-box wait';
+      el.sigMain.textContent = 'WAIT';
+      el.sigReason.textContent = ind.waitReason;
+      el.clarityTag.textContent = 'FILTERED';
+      el.clarityTag.style.color = 'var(--gold)';
+    }
+
+    // Risk Levels (Active or Projected)
+    const lastAtr = ind.atr[ind.atr.length - 1];
+    const lvls = pos || calcRiskLevels(ind.nextDir, price, lastAtr);
+    el.levelsTitle.textContent = pos ? 'Locked Position Levels' : `Projected ${ind.nextDir} Levels`;
+    el.posBadge.textContent = pos ? `${pos.side} OPEN` : 'PREVIEW';
+    el.posBadge.style.color = pos ? (pos.side === 'BUY' ? 'var(--buy)' : 'var(--sell)') : 'var(--muted)';
+    el.entryLbl.textContent = pos ? 'Locked Entry' : `Est. ${ind.nextDir} Entry`;
+    el.slLbl.textContent = pos && pos.beActive ? 'Stop (Break-Even)' : 'Stop Loss (SL)';
+    el.lvlEntry.textContent = lvls.entry.toFixed(2);
+    el.lvlSL.textContent = lvls.sl.toFixed(2);
+    el.lvlTP1.textContent = lvls.tp1.toFixed(2);
+    el.lvlTP2.textContent = lvls.tp2.toFixed(2);
+    el.closePosBtn.style.display = pos ? 'block' : 'none';
+
+    // Stats
+    const st = state.stats;
+    el.statPnl.textContent = `${st.pnl >= 0 ? '+' : ''}$${st.pnl.toFixed(2)}`;
+    el.statPnl.style.color = st.pnl >= 0 ? 'var(--buy)' : 'var(--sell)';
+    const wr = st.trades > 0 ? Math.round((st.wins / st.trades) * 100) : 0;
+    el.statWin.textContent = `${wr}%`;
+    el.statTrades.textContent = st.trades;
+
+    updateOhlcHud(state.hoverIdx >= 0 ? state.hoverIdx : state.bars.length - 1);
+  }
+
+  function updateOhlcHud(idx) {
+    const ind = state.indicators;
+    const b = state.bars[idx];
+    if (!ind || !b) return;
+    el.ohlcHud.innerHTML = `
+      <span>O <b>${b.o.toFixed(2)}</b></span>
+      <span>H <b>${b.h.toFixed(2)}</b></span>
+      <span>L <b>${b.l.toFixed(2)}</b></span>
+      <span>C <b style="color:${b.c >= b.o ? '#00c896' : '#ff4d6d'}">${b.c.toFixed(2)}</b></span>
+      <span>EMA9 <b style="color:#00c896">${ind.ema9[idx].toFixed(2)}</b></span>
+      <span>EMA21 <b style="color:#ff4d6d">${ind.ema21[idx].toFixed(2)}</b></span>
+      <span>ADX <b>${ind.adx[idx].toFixed(1)}</b></span>
+      <span>RSI <b>${ind.rsi[idx].toFixed(1)}</b></span>
+    `;
+  }
+
+  // =========================================================================
+  // 7. HIGH-DPI CANVAS CHART RENDERER
+  // =========================================================================
+  function resizeCanvas() {
+    const rect = el.wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    el.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    el.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawChart();
+  }
+
+  function drawChart() {
+    const bars = state.bars;
+    const ind = state.indicators;
+    if (!bars.length || !ind) return;
+
+    const w = el.canvas.clientWidth;
+    const h = el.canvas.clientHeight;
+    if (w < 40 || h < 40) return;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const padR = 74;
+    const padT = 18;
+    const padB = 26;
+    const plotW = w - padR;
+    const plotH = h - padT - padB;
+
+    const count = Math.min(state.visibleBars, bars.length);
+    const startIdx = bars.length - count;
+    const slotW = plotW / (count + 4); // leave right breathing space for SL/TP labels
+
+    // Price scale bounds
+    let minP = Infinity, maxP = -Infinity;
+    for (let i = startIdx; i < bars.length; i++) {
+      minP = Math.min(minP, bars[i].l, ind.ema50[i]);
+      maxP = Math.max(maxP, bars[i].h, ind.ema50[i]);
+    }
+    if (state.position) {
+      minP = Math.min(minP, state.position.sl, state.position.tp1, state.position.tp2);
+      maxP = Math.max(maxP, state.position.sl, state.position.tp1, state.position.tp2);
+    }
+    const padP = Math.max((maxP - minP) * 0.12, 0.5);
+    minP -= padP;
+    maxP += padP;
+
+    const xOf = (idx) => (idx - startIdx + 0.5) * slotW;
+    const yOf = (price) => padT + ((maxP - price) / (maxP - minP)) * plotH;
+
+    // Grid lines & Y-axis labels
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#7f899c';
+    ctx.font = '11px monospace';
+    const rows = 6;
+    for (let r = 0; r <= rows; r++) {
+      const py = padT + (plotH / rows) * r;
+      const pVal = maxP - ((maxP - minP) / rows) * r;
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(plotW, py);
+      ctx.stroke();
+      ctx.fillText(pVal.toFixed(2), plotW + 7, py + 4);
+    }
+
+    // EMA 9 / 21 Ribbon Fill
+    for (let i = startIdx + 1; i < bars.length; i++) {
+      const bull = ind.ema9[i] >= ind.ema21[i];
+      ctx.fillStyle = bull ? 'rgba(0, 200, 150, 0.14)' : 'rgba(255, 77, 109, 0.14)';
+      ctx.beginPath();
+      ctx.moveTo(xOf(i - 1), yOf(ind.ema9[i - 1]));
+      ctx.lineTo(xOf(i), yOf(ind.ema9[i]));
+      ctx.lineTo(xOf(i), yOf(ind.ema21[i]));
+      ctx.lineTo(xOf(i - 1), yOf(ind.ema21[i - 1]));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Helper for moving average lines
+    const drawLine = (arr, color, width = 1.4) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      for (let i = startIdx; i < bars.length; i++) {
+        const x = xOf(i), y = yOf(arr[i]);
+        if (i === startIdx) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    };
+
+    drawLine(ind.ema50, 'rgba(234, 202, 130, 0.65)', 1.8);
+    drawLine(ind.ema9,  'rgba(0, 200, 150, 0.85)', 1.2);
+    drawLine(ind.ema21, 'rgba(255, 77, 109, 0.85)', 1.2);
+
+    // Candlesticks
+    const bodyW = Math.max(2, Math.min(11, slotW * 0.62));
+    for (let i = startIdx; i < bars.length; i++) {
+      const b = bars[i];
+      const x = xOf(i);
+      const up = b.c >= b.o;
+      const col = up ? '#00c896' : '#ff4d6d';
+
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, yOf(b.h));
+      ctx.lineTo(x, yOf(b.l));
+      ctx.stroke();
+
+      const yTop = yOf(Math.max(b.o, b.c));
+      const yBot = yOf(Math.min(b.o, b.c));
+      ctx.fillStyle = col;
+      ctx.fillRect(x - bodyW / 2, yTop, bodyW, Math.max(1.5, yBot - yTop));
+    }
+
+    // BUY / SELL Labels on Candles
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    for (const sig of state.signals) {
+      if (sig.idx < startIdx || sig.idx >= bars.length) continue;
+      const b = bars[sig.idx];
+      const x = xOf(sig.idx);
+      const isBuy = sig.side === 'BUY';
+      const y = isBuy ? yOf(b.l) + 18 : yOf(b.h) - 10;
+
+      ctx.fillStyle = isBuy ? '#00c896' : '#ff4d6d';
+      ctx.beginPath();
+      ctx.roundRect(x - 19, y - 10, 38, 15, 4);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(sig.side, x, y + 1);
+    }
+    ctx.textAlign = 'left';
+
+    // Active Position Risk Lines (Entry, SL/BE, TP1, TP2)
+    if (state.position) {
+      const p = state.position;
+      const levels = [
+        { val: p.entry, lbl: 'ENTRY', col: '#eaca82', dash: [2, 3] },
+        { val: p.sl,    lbl: p.beActive ? 'BE' : 'SL', col: '#ff4d6d', dash: [5, 4] },
+        { val: p.tp1,   lbl: 'TP1', col: '#00c896', dash: [5, 4] },
+        { val: p.tp2,   lbl: 'TP2', col: '#38bdf8', dash: [5, 4] }
+      ];
+      levels.forEach(lv => {
+        const y = yOf(lv.val);
+        if (y < padT || y > padT + plotH) return;
+        ctx.save();
+        ctx.strokeStyle = lv.col;
+        ctx.setLineDash(lv.dash);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(plotW, y);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = lv.col;
+        ctx.fillRect(plotW + 2, y - 8, padR - 4, 16);
+        ctx.fillStyle = lv.col === '#eaca82' ? '#0c0e13' : '#ffffff';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(`${lv.lbl} ${lv.val.toFixed(1)}`, plotW + 5, y + 3);
+      });
+    }
+
+    // Live Price Line & Pill
+    const liveP = bars[bars.length - 1].c;
+    const liveY = yOf(liveP);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, liveY);
+    ctx.lineTo(plotW, liveY);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#252c3b';
+    ctx.fillRect(plotW + 2, liveY - 9, padR - 4, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(liveP.toFixed(2), plotW + 6, liveY + 4);
+
+    // X-Axis Time Stamps
+    ctx.fillStyle = '#7f899c';
+    ctx.font = '10.5px monospace';
+    const step = Math.max(1, Math.floor(count / 7));
+    for (let i = startIdx; i < bars.length; i += step) {
+      const d = new Date(bars[i].t);
+      const tStr = d.toTimeString().slice(0, 5);
+      ctx.fillText(tStr, xOf(i) - 14, h - 8);
+    }
+
+    // Crosshair on hover
+    if (state.hoverIdx >= startIdx && state.hoverIdx < bars.length) {
+      const hx = xOf(state.hoverIdx);
+      ctx.strokeStyle = 'rgba(234, 202, 130, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(hx, padT);
+      ctx.lineTo(hx, padT + plotH);
+      ctx.stroke();
+    }
+  }
+
+  // =========================================================================
+  // 8. LIVE DATA FEED (BINANCE PAXGUSDT GOLD PROXY) + FAST SIM FALLBACK
+  // =========================================================================
+  function stopFeeds() {
+    if (state.ws) { try { state.ws.close(); } catch (_) {} state.ws = null; }
+    if (state.simTimer) { clearInterval(state.simTimer); state.simTimer = null; }
+  }
+
+  async function startLiveFeed() {
+    stopFeeds();
+    el.feedStatus.textContent = 'Loading live gold history (PAXG/USDT proxy)...';
+    el.connDot.style.background = '#eaca82';
+
+    try {
+      const res = await fetch('https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=1m&limit=360');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const raw = await res.json();
+      state.candles1m = raw.map(k => ({
+        t: Number(k[0]),
+        o: Number(k[1]),
+        h: Number(k[2]),
+        l: Number(k[3]),
+        c: Number(k[4])
+      }));
+      state.openDayPrice = state.candles1m[0].o;
+      state.lastTickPrice = state.candles1m[state.candles1m.length - 1].c;
+      runAnalysis(false);
+
+      const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@kline_1m');
+      state.ws = ws;
+      ws.onopen = () => {
+        el.connDot.style.background = '#00c896';
+        el.feedStatus.textContent = 'LIVE · Gold Proxy (PAXG/USDT) · Real-Time WebSocket';
+        addLog('Connected to Live Gold WebSocket', 'info');
+      };
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (!msg.k) return;
+        const k = msg.k;
+        const bar = { t: Number(k.t), o: Number(k.o), h: Number(k.h), l: Number(k.l), c: Number(k.c) };
+        const last = state.candles1m[state.candles1m.length - 1];
+        let closedNewBar = false;
+        if (last && last.t === bar.t) {
+          state.candles1m[state.candles1m.length - 1] = bar;
+        } else {
+          state.candles1m.push(bar);
+          if (state.candles1m.length > 480) state.candles1m.shift();
+          closedNewBar = true;
+        }
+        state.lastTickPrice = bar.c;
+        runAnalysis(closedNewBar);
+      };
+      ws.onerror = () => {
+        if (state.feedMode === 'live') {
+          addLog('Live feed blocked — switched to XAUUSD Sim', 'info');
+          document.getElementById('feedMode').value = 'sim';
+          state.feedMode = 'sim';
+          startSimFeed();
+        }
+      };
+    } catch (err) {
+      addLog('Live feed unavailable — switched to XAUUSD Sim', 'info');
+      document.getElementById('feedMode').value = 'sim';
+      state.feedMode = 'sim';
+      startSimFeed();
+    }
+  }
+
+  function startSimFeed() {
+    stopFeeds();
+    el.connDot.style.background = '#38bdf8';
+    el.feedStatus.textContent = 'SIM ENGINE · Synthetic XAUUSD Volatility (~4000)';
+
+    // Seed 360 realistic 1m gold candles around 4001.87
+    const nowMin = Math.floor(Date.now() / 60000) * 60000;
+    let p = 3992.50;
+    let drift = 0.08;
+    const arr = [];
+    for (let i = 360; i >= 1; i--) {
+      if (i % 28 === 0) drift = (Math.random() - 0.48) * 0.45;
+      const o = p;
+      const move = drift + (Math.random() - 0.5) * 1.45;
+      const c = o + move;
+      const h = Math.max(o, c) + Math.random() * 0.75;
+      const l = Math.min(o, c) - Math.random() * 0.75;
+      arr.push({ t: nowMin - i * 60000, o, h, l, c });
+      p = c;
+    }
+    state.candles1m = arr;
+    state.openDayPrice = arr[0].o;
+    state.lastTickPrice = p;
+    runAnalysis(false);
+
+    let simDrift = 0.05;
+    let ticksInBar = 0;
+    state.simTimer = setInterval(() => {
+      ticksInBar++;
+      if (ticksInBar % 40 === 0) simDrift = (Math.random() - 0.49) * 0.28;
+      const last = state.candles1m[state.candles1m.length - 1];
+      const delta = simDrift + (Math.random() - 0.5) * 0.65;
+      const nextP = Math.max(100, last.c + delta);
+      state.lastTickPrice = nextP;
+
+      // Close a simulated 1m bar every 6 seconds so user sees fast live triggers
+      if (ticksInBar >= 12) {
+        ticksInBar = 0;
+        const nextT = last.t + 60000;
+        state.candles1m.push({ t: nextT, o: nextP, h: nextP, l: nextP, c: nextP });
+        if (state.candles1m.length > 480) state.candles1m.shift();
+        runAnalysis(true);
+      } else {
+        last.c = nextP;
+        last.h = Math.max(last.h, nextP);
+        last.l = Math.min(last.l, nextP);
+        runAnalysis(false);
+      }
+    }, 500);
+  }
+
+  // Countdown Timer for current timeframe bar
+  setInterval(() => {
+    const tfSec = state.tf * 60;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const rem = tfSec - (nowSec % tfSec);
+    const m = String(Math.floor(rem / 60)).padStart(2, '0');
+    const s = String(rem % 60).padStart(2, '0');
+    el.barTimer.textContent = `${m}:${s}`;
+  }, 500);
+
+  // =========================================================================
+  // 9. EVENT LISTENERS
+  // =========================================================================
+  document.querySelectorAll('#tfGroup button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#tfGroup button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.tf = Number(btn.dataset.tf);
+      runAnalysis(false);
+    });
+  });
+
+  document.getElementById('speedMode').addEventListener('change', (e) => {
+    state.speedMode = e.target.value;
+    addLog(`Switched speed mode → ${state.speedMode.toUpperCase()}`, 'info');
+    runAnalysis(false);
+  });
+
+  document.getElementById('feedMode').addEventListener('change', (e) => {
+    state.feedMode = e.target.value;
+    state.position = null;
+    if (state.feedMode === 'live') startLiveFeed();
+    else startSimFeed();
+  });
+
+  document.getElementById('autoTradeBtn').addEventListener('click', (e) => {
+    state.autoTrack = !state.autoTrack;
+    e.target.textContent = `Auto-Track: ${state.autoTrack ? 'ON' : 'OFF'}`;
+    e.target.classList.toggle('on', state.autoTrack);
+  });
+
+  document.getElementById('soundBtn').addEventListener('click', (e) => {
+    state.soundOn = !state.soundOn;
+    e.target.textContent = `Sound: ${state.soundOn ? 'ON' : 'OFF'}`;
+    e.target.classList.toggle('on', state.soundOn);
+  });
+
+  document.getElementById('manualBuyBtn').addEventListener('click', () => {
+    if (state.position) closePositionManual();
+    const atr = state.indicators ? state.indicators.atr[state.indicators.atr.length - 1] : 1.2;
+    openPosition('BUY', state.lastTickPrice, atr, state.indicators?.buyProb || 50);
+    playTone('buy');
+  });
+
+  document.getElementById('manualSellBtn').addEventListener('click', () => {
+    if (state.position) closePositionManual();
+    const atr = state.indicators ? state.indicators.atr[state.indicators.atr.length - 1] : 1.2;
+    openPosition('SELL', state.lastTickPrice, atr, state.indicators?.sellProb || 50);
+    playTone('sell');
+  });
+
+  el.closePosBtn.addEventListener('click', closePositionManual);
+
+  document.getElementById('resetStatsBtn').addEventListener('click', () => {
+    state.stats = { pnl: 0, wins: 0, losses: 0, trades: 0 };
+    updateDashboard();
+  });
+
+  document.getElementById('zoomInBtn').addEventListener('click', () => {
+    state.visibleBars = Math.max(30, state.visibleBars - 15);
+    drawChart();
+  });
+
+  document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    state.visibleBars = Math.min(200, state.visibleBars + 15);
+    drawChart();
+  });
+
+  el.canvas.addEventListener('mousemove', (e) => {
+    if (!state.bars.length) return;
+    const rect = el.canvas.getBoundingClientRect();
+    const plotW = rect.width - 74;
+    const count = Math.min(state.visibleBars, state.bars.length);
+    const startIdx = state.bars.length - count;
+    const slotW = plotW / (count + 4);
+    const idx = Math.floor((e.clientX - rect.left) / slotW) + startIdx;
+    if (idx >= startIdx && idx < state.bars.length) {
+      state.hoverIdx = idx;
+      updateOhlcHud(idx);
+      drawChart();
+    }
+  });
+
+  el.canvas.addEventListener('mouseleave', () => {
+    state.hoverIdx = -1;
+    updateOhlcHud(state.bars.length - 1);
+    drawChart();
+  });
+
+  el.canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    state.visibleBars = Math.max(30, Math.min(200, state.visibleBars + (e.deltaY > 0 ? 8 : -8)));
+    drawChart();
+  }, { passive: false });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  // Boot
+  resizeCanvas();
+  startLiveFeed();
+})();
+</script>
+</body>
+</html>
